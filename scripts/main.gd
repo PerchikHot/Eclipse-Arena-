@@ -45,6 +45,12 @@ var selection_buttons: Array[Button] = []
 var player_name_label: Label
 var enemy_name_label: Label
 var fighter_textures: Array[Texture2D] = []
+var costume_names := ["КАНОН", "БОЕВОЙ", "ПЛЯЖНЫЙ"]
+var selected_costume := 0
+var costume_button: Button
+var selection_preview: TextureRect
+var selection_name: Label
+var selection_choice := 0
 var joystick_center := Vector2(112, 643)
 var joystick_axis := 0.0
 var joystick_touch := -1
@@ -166,7 +172,7 @@ func _ready() -> void:
     )
     menu_layer.add_child(reset_button)
     var version_label := Label.new()
-    version_label.text = "ANDROID PROTOTYPE  •  v0.4"
+    version_label.text = "ANDROID PROTOTYPE  •  v0.6"
     version_label.position = Vector2(65, 650)
     version_label.add_theme_font_size_override("font_size", 18)
     menu_layer.add_child(version_label)
@@ -195,12 +201,35 @@ func _ready() -> void:
         fighter_button.size = Vector2(255, 270)
         fighter_button.add_theme_font_size_override("font_size", 29)
         fighter_button.add_theme_color_override("font_color", fighter_hair[i])
-        fighter_button.pressed.connect(select_fighter.bind(i))
+        fighter_button.pressed.connect(preview_fighter.bind(i))
         selection_layer.add_child(fighter_button)
         selection_buttons.append(fighter_button)
+    selection_preview = TextureRect.new()
+    selection_preview.position = Vector2(520, 485)
+    selection_preview.size = Vector2(75, 118)
+    selection_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    selection_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+    selection_layer.add_child(selection_preview)
+    selection_name = Label.new()
+    selection_name.position = Vector2(600, 492)
+    selection_name.size = Vector2(240, 38)
+    selection_name.add_theme_font_size_override("font_size", 24)
+    selection_layer.add_child(selection_name)
+    costume_button = Button.new()
+    costume_button.position = Vector2(600, 530)
+    costume_button.size = Vector2(245, 56)
+    costume_button.pressed.connect(cycle_costume)
+    selection_layer.add_child(costume_button)
+    var confirm_button := Button.new()
+    confirm_button.text = "В БОЙ"
+    confirm_button.position = Vector2(930, 620)
+    confirm_button.size = Vector2(260, 70)
+    confirm_button.add_theme_font_size_override("font_size", 25)
+    confirm_button.pressed.connect(func() -> void: select_fighter(selection_choice))
+    selection_layer.add_child(confirm_button)
     var selection_hint := Label.new()
     selection_hint.text = "ВЫБЕРИ ГЕРОИНЮ — ПРОТИВНИК БУДЕТ ВЫБРАН АВТОМАТИЧЕСКИ"
-    selection_hint.position = Vector2(155, 560)
+    selection_hint.position = Vector2(95, 150)
     selection_hint.add_theme_font_size_override("font_size", 22)
     selection_layer.add_child(selection_hint)
     var back_button := Button.new()
@@ -219,6 +248,20 @@ func show_selection() -> void:
     in_menu = true
     menu_layer.visible = false
     selection_layer.visible = true
+    preview_fighter(selection_choice)
+
+func preview_fighter(index: int) -> void:
+    selection_choice = index
+    selection_preview.texture = fighter_textures[index]
+    selection_name.text = fighter_names[index]
+    costume_button.text = "КОСТЮМ: " + costume_names[selected_costume]
+    for i in range(selection_buttons.size()):
+        selection_buttons[i].modulate = Color("#ffffff") if i == index else Color("#85849a")
+
+func cycle_costume() -> void:
+    selected_costume = (selected_costume + 1) % costume_names.size()
+    costume_button.text = "КОСТЮМ: " + costume_names[selected_costume]
+    play_sound("menu")
 
 func select_fighter(index: int) -> void:
     selected_fighter = index
@@ -449,7 +492,13 @@ func draw_sprite_fighter(origin: Vector2, fighter_id: int, face_right: bool, mot
     var body_width := 134.0
     var lean := attack_fx * 42.0 * direction
     var destination := Rect2(origin.x - body_width * 0.5 + lean, origin.y - body_height - bob, body_width, body_height)
-    draw_texture_rect(fighter_textures[fighter_id], destination, false, Color("#ffd6d6") if hit_fx > 0.0 else Color.WHITE)
+    var costume_tint := Color.WHITE
+    if fighter_id == selected_fighter:
+        if selected_costume == 1:
+            costume_tint = Color("#d5ddff")
+        elif selected_costume == 2:
+            costume_tint = Color("#ffcedb")
+    draw_texture_rect(fighter_textures[fighter_id], destination, false, Color("#ffd6d6") if hit_fx > 0.0 else costume_tint)
     if attack_fx > 0.0:
         var glow := Color("#9eeaff") if fighter_id == 0 else Color("#ff9da7") if fighter_id == 1 else Color("#f9d799") if fighter_id == 2 else Color("#caa1ff")
         var hand := origin + Vector2(42.0 * direction, -135.0)
