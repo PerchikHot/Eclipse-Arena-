@@ -34,6 +34,16 @@ var pause_button: Button
 var audio_players: Array[AudioStreamPlayer] = []
 var sound_library: Dictionary = {}
 var sound_slot := 0
+var fighter_names := ["ЯМАТО", "ЭРЗА", "АЛЬФА", "РИАС"]
+var fighter_colors := [Color("#f0eceb"), Color("#b73545"), Color("#1c263f"), Color("#421c49")]
+var fighter_hair := [Color("#e5f8ff"), Color("#a92736"), Color("#edcf86"), Color("#b7283f")]
+var selected_fighter := 0
+var enemy_fighter := 1
+var selection_layer: Control
+var selection_title: Label
+var selection_buttons: Array[Button] = []
+var player_name_label: Label
+var enemy_name_label: Label
 
 func _ready() -> void:
     sound_library["swing"] = make_sound(0.13, 220.0, 90.0, 0.14, 0)
@@ -60,6 +70,14 @@ func _ready() -> void:
         held[label] = false
         button.button_down.connect(func(): held[label] = true)
         button.button_up.connect(func(): held[label] = false)
+    player_name_label = Label.new()
+    player_name_label.position = Vector2(50, 5)
+    player_name_label.add_theme_font_size_override("font_size", 20)
+    add_child(player_name_label)
+    enemy_name_label = Label.new()
+    enemy_name_label.position = Vector2(830, 5)
+    enemy_name_label.add_theme_font_size_override("font_size", 20)
+    add_child(enemy_name_label)
     score_label = Label.new()
     score_label.position = Vector2(495, 20)
     score_label.add_theme_font_size_override("font_size", 22)
@@ -117,15 +135,14 @@ func _ready() -> void:
     start_button.position = Vector2(55, 335)
     start_button.size = Vector2(350, 75)
     start_button.add_theme_font_size_override("font_size", 29)
-    start_button.pressed.connect(start_game)
+    start_button.pressed.connect(show_selection)
     menu_layer.add_child(start_button)
     var reset_button := Button.new()
     reset_button.text = "НОВЫЙ БОЙ"
     reset_button.position = Vector2(55, 430)
     reset_button.size = Vector2(350, 75)
     reset_button.pressed.connect(func() -> void:
-        restart_round()
-        start_game()
+        show_selection()
     )
     menu_layer.add_child(reset_button)
     var version_label := Label.new()
@@ -133,7 +150,60 @@ func _ready() -> void:
     version_label.position = Vector2(65, 650)
     version_label.add_theme_font_size_override("font_size", 18)
     menu_layer.add_child(version_label)
+    selection_layer = Control.new()
+    selection_layer.visible = false
+    add_child(selection_layer)
+    var selection_shade := ColorRect.new()
+    selection_shade.color = Color("#0e1027")
+    selection_shade.size = Vector2(1280, 720)
+    selection_layer.add_child(selection_shade)
+    selection_title = Label.new()
+    selection_title.text = "ВЫБОР ПЕРСОНАЖА"
+    selection_title.position = Vector2(275, 55)
+    selection_title.size = Vector2(730, 80)
+    selection_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    selection_title.add_theme_font_size_override("font_size", 45)
+    selection_layer.add_child(selection_title)
+    for i in range(fighter_names.size()):
+        var fighter_button := Button.new()
+        fighter_button.text = fighter_names[i]
+        fighter_button.position = Vector2(75 + i * 295, 220)
+        fighter_button.size = Vector2(255, 270)
+        fighter_button.add_theme_font_size_override("font_size", 29)
+        fighter_button.add_theme_color_override("font_color", fighter_hair[i])
+        fighter_button.pressed.connect(select_fighter.bind(i))
+        selection_layer.add_child(fighter_button)
+        selection_buttons.append(fighter_button)
+    var selection_hint := Label.new()
+    selection_hint.text = "ВЫБЕРИ ГЕРОИНЮ — ПРОТИВНИК БУДЕТ ВЫБРАН АВТОМАТИЧЕСКИ"
+    selection_hint.position = Vector2(155, 560)
+    selection_hint.add_theme_font_size_override("font_size", 22)
+    selection_layer.add_child(selection_hint)
+    var back_button := Button.new()
+    back_button.text = "НАЗАД"
+    back_button.position = Vector2(50, 620)
+    back_button.size = Vector2(180, 65)
+    back_button.pressed.connect(func() -> void:
+        selection_layer.visible = false
+        show_menu()
+    )
+    selection_layer.add_child(back_button)
     show_menu()
+
+func show_selection() -> void:
+    play_sound("menu")
+    in_menu = true
+    menu_layer.visible = false
+    selection_layer.visible = true
+
+func select_fighter(index: int) -> void:
+    selected_fighter = index
+    enemy_fighter = (index + randi_range(1, 3)) % fighter_names.size()
+    player_name_label.text = fighter_names[selected_fighter]
+    enemy_name_label.text = fighter_names[enemy_fighter]
+    selection_layer.visible = false
+    restart_round()
+    start_game()
 
 func make_sound(duration: float, start_hz: float, end_hz: float, volume: float, noise_mix: int) -> AudioStreamWAV:
     var sample_rate := 22050
@@ -171,6 +241,7 @@ func show_menu() -> void:
     play_sound("menu")
     in_menu = true
     menu_layer.visible = true
+    selection_layer.visible = false
     for key in controls.keys():
         controls[key].visible = false
     pause_button.visible = false
@@ -186,6 +257,8 @@ func start_game() -> void:
     pause_button.visible = true
     cooldown_label.visible = true
     restart_button.visible = round_over
+    player_name_label.text = fighter_names[selected_fighter]
+    enemy_name_label.text = fighter_names[enemy_fighter]
 
 func restart_round() -> void:
     hp_left = 100
@@ -299,8 +372,8 @@ func _draw() -> void:
     draw_circle(Vector2(640, 180), 110, Color("#42396e"))
     draw_rect(Rect2(0, 610, 1280, 110), Color("#2a2544"))
     draw_line(Vector2(0, 610), Vector2(1280, 610), Color("#8e84be"), 4)
-    draw_fighter(Vector2(x_left, y_left), Color("#ffffff") if player_hit_fx > 0.0 else Color("#cdb879"), player_attack_fx > 0.0, x_right >= x_left, player_motion, true)
-    draw_fighter(Vector2(x_right, 610), Color("#ffffff") if enemy_hit_fx > 0.0 else Color("#b44363"), enemy_attack_fx > 0.0, x_left >= x_right, enemy_motion, false)
+    draw_fighter(Vector2(x_left, y_left), Color("#ffffff") if player_hit_fx > 0.0 else fighter_colors[selected_fighter], player_attack_fx > 0.0, x_right >= x_left, player_motion, true)
+    draw_fighter(Vector2(x_right, 610), Color("#ffffff") if enemy_hit_fx > 0.0 else fighter_colors[enemy_fighter], enemy_attack_fx > 0.0, x_left >= x_right, enemy_motion, false)
     if enemy_hit_fx > 0.0:
         draw_circle(Vector2(x_right, 470), 12.0 + enemy_hit_fx * 55.0, Color("#ffd56c", enemy_hit_fx * 3.0))
     if player_hit_fx > 0.0:
@@ -315,8 +388,9 @@ func draw_fighter(origin: Vector2, color: Color, attacking: bool, face_right: bo
     var step: float = sin(animation_clock * 12.0) * 10.0 if absf(motion) > 0.1 else 0.0
     var bob: float = absf(sin(animation_clock * 12.0)) * 3.0 if absf(motion) > 0.1 else sin(animation_clock * 2.0) * 2.0
     var body: Vector2 = origin + Vector2(0, -bob)
-    var hair: Color = Color("#d7a04d") if is_player else Color("#312245")
-    var trim: Color = Color("#fff0c7") if is_player else Color("#f4b6db")
+    var fighter_id: int = selected_fighter if is_player else enemy_fighter
+    var hair: Color = fighter_hair[fighter_id]
+    var trim: Color = Color("#a2efff") if fighter_id == 0 else Color("#f3c574") if fighter_id == 2 else Color("#ffd4df")
     var boot: Color = Color("#38304c")
     draw_line(body + Vector2(-13, -48), body + Vector2(-17 + step, -5), boot, 20.0)
     draw_line(body + Vector2(13, -48), body + Vector2(17 - step, -5), boot, 20.0)
@@ -331,6 +405,18 @@ func draw_fighter(origin: Vector2, color: Color, attacking: bool, face_right: bo
     draw_colored_polygon(PackedVector2Array([body + Vector2(-27, -76), body + Vector2(27, -76), body + Vector2(36, -45), body + Vector2(-36, -45)]), color.darkened(0.12))
     draw_circle(body + Vector2(0, -159), 26.0, Color("#f2d0b3"))
     draw_arc(body + Vector2(0, -164), 27.0, PI, TAU, 18, hair, 12.0)
+    if fighter_id == 0:
+        draw_line(body + Vector2(-19, -182), body + Vector2(-29, -215), Color("#b83b37"), 11.0)
+        draw_line(body + Vector2(19, -182), body + Vector2(29, -215), Color("#b83b37"), 11.0)
+        draw_line(body + Vector2(15, -181), body + Vector2(37, -100), Color("#68d5db"), 12.0)
+    elif fighter_id == 2:
+        draw_colored_polygon(PackedVector2Array([body + Vector2(-24,-165), body + Vector2(-48,-172), body + Vector2(-25,-151)]), Color("#efc3a4"))
+        draw_colored_polygon(PackedVector2Array([body + Vector2(24,-165), body + Vector2(48,-172), body + Vector2(25,-151)]), Color("#efc3a4"))
+    elif fighter_id == 1:
+        draw_line(body + Vector2(18,-180), body + Vector2(28,-102), hair, 15.0)
+    elif fighter_id == 3:
+        draw_line(body + Vector2(-20,-180), body + Vector2(-35,-100), hair, 16.0)
+        draw_line(body + Vector2(20,-180), body + Vector2(35,-100), hair, 16.0)
     draw_circle(body + Vector2(-13 * facing, -160), 4.0, hair)
     draw_circle(body + Vector2(9 * facing, -158), 3.0, Color("#29243d"))
     draw_line(body + Vector2(4 * facing, -146), body + Vector2(12 * facing, -146), Color("#a45e69"), 2.0)
