@@ -12,6 +12,12 @@ var left_rig := {}
 var right_rig := {}
 var controls := {}
 var held := {}
+var round_over := false
+var player_wins := 0
+var enemy_wins := 0
+var score_label: Label
+var result_label: Label
+var restart_button: Button
 
 func _ready() -> void:
     left_rig = make_rig()
@@ -27,6 +33,51 @@ func _ready() -> void:
         held[label] = false
         button.button_down.connect(func(): held[label] = true)
         button.button_up.connect(func(): held[label] = false)
+    score_label = Label.new()
+    score_label.position = Vector2(495, 20)
+    score_label.add_theme_font_size_override("font_size", 22)
+    score_label.text = "PLAYER 0 : 0 ENEMY"
+    add_child(score_label)
+    result_label = Label.new()
+    result_label.position = Vector2(500, 280)
+    result_label.add_theme_font_size_override("font_size", 42)
+    result_label.visible = false
+    add_child(result_label)
+    restart_button = Button.new()
+    restart_button.text = "RESTART"
+    restart_button.position = Vector2(760, 620)
+    restart_button.size = Vector2(170, 80)
+    restart_button.visible = false
+    restart_button.pressed.connect(restart_round)
+    add_child(restart_button)
+
+func restart_round() -> void:
+    hp_left = 100
+    hp_right = 100
+    x_left = 300.0
+    x_right = 900.0
+    y_left = 610.0
+    velocity_y = 0.0
+    attack_cooldown = 0.0
+    enemy_cooldown = 0.0
+    round_over = false
+    result_label.visible = false
+    restart_button.visible = false
+    queue_redraw()
+
+func finish_round(player_won: bool) -> void:
+    if round_over:
+        return
+    round_over = true
+    if player_won:
+        player_wins += 1
+        result_label.text = "YOU WIN!"
+    else:
+        enemy_wins += 1
+        result_label.text = "YOU LOSE!"
+    score_label.text = "PLAYER %d : %d ENEMY" % [player_wins, enemy_wins]
+    result_label.visible = true
+    restart_button.visible = true
 
 func make_rig() -> Dictionary:
     var anchors := {}
@@ -35,6 +86,8 @@ func make_rig() -> Dictionary:
     return anchors
 
 func _process(delta: float) -> void:
+    if round_over:
+        return
     attack_cooldown = maxf(0, attack_cooldown - delta)
     enemy_cooldown = maxf(0, enemy_cooldown - delta)
     var left_pressed: bool = Input.is_key_pressed(KEY_A) or held["LEFT"]
@@ -50,14 +103,18 @@ func _process(delta: float) -> void:
     if y_left >= 610:
         velocity_y = 0
     if hit_pressed and attack_cooldown <= 0:
-        attack_cooldown = 0.35
+        attack_cooldown = 0.55
         if absf(x_left - x_right) < 145:
             hp_right = maxi(0, hp_right - 10)
+            if hp_right == 0:
+                finish_round(true)
     if hp_left > 0 and hp_right > 0:
         x_right += signf(x_left - x_right) * 170 * delta if absf(x_left - x_right) > 110 else 0.0
         if absf(x_left - x_right) < 140 and enemy_cooldown <= 0:
             enemy_cooldown = 0.85
             hp_left = maxi(0, hp_left - 7)
+            if hp_left == 0:
+                finish_round(false)
     queue_redraw()
 
 func _draw() -> void:
@@ -67,6 +124,8 @@ func _draw() -> void:
     draw_line(Vector2(0, 610), Vector2(1280, 610), Color("#8e84be"), 4)
     draw_fighter(Vector2(x_left, y_left), Color("#cdb879"))
     draw_fighter(Vector2(x_right, 610), Color("#b44363"))
+    draw_rect(Rect2(50, 35, 400, 26), Color("#393349"))
+    draw_rect(Rect2(830, 35, 400, 26), Color("#393349"))
     draw_rect(Rect2(50, 35, hp_left * 4, 26), Color("#80d6ae"))
     draw_rect(Rect2(830, 35, hp_right * 4, 26), Color("#df738f"))
 
