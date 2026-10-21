@@ -44,6 +44,12 @@ var selection_title: Label
 var selection_buttons: Array[Button] = []
 var player_name_label: Label
 var enemy_name_label: Label
+var joystick_center := Vector2(112, 643)
+var joystick_axis := 0.0
+var joystick_touch := -1
+var combo_hits := 0
+var combo_timer := 0.0
+var block_timer := 0.0
 
 func _ready() -> void:
     sound_library["swing"] = make_sound(0.13, 220.0, 90.0, 0.14, 0)
@@ -59,12 +65,23 @@ func _ready() -> void:
         audio_players.append(audio)
     left_rig = make_rig()
     right_rig = make_rig()
-    for label in ["LEFT", "RIGHT", "JUMP", "HIT"]:
+    for label in ["JUMP", "HIT", "BLOCK", "SKILL"]:
         var button := Button.new()
-        button.text = label
-        button.position = Vector2(30 + controls.size() * 145, 620)
-        button.size = Vector2(130, 80)
-        button.modulate.a = 0.8
+        button.text = {"JUMP": "ПРЫЖОК", "HIT": "УДАР", "BLOCK": "БЛОК", "SKILL": "СПЕЦ"}[label]
+        var positions := {"JUMP": Vector2(1110, 550), "HIT": Vector2(1000, 610), "BLOCK": Vector2(910, 535), "SKILL": Vector2(1160, 625)}
+        button.position = positions[label]
+        button.size = Vector2(92, 92)
+        button.add_theme_font_size_override("font_size", 16)
+        var normal := StyleBoxFlat.new()
+        normal.bg_color = Color("#41375e")
+        normal.border_color = Color("#c8a5f7")
+        normal.set_border_width_all(2)
+        normal.set_corner_radius_all(46)
+        button.add_theme_stylebox_override("normal", normal)
+        var pressed := normal.duplicate()
+        pressed.bg_color = Color("#7650ac")
+        button.add_theme_stylebox_override("pressed", pressed)
+        button.add_theme_stylebox_override("hover", pressed)
         add_child(button)
         controls[label] = button
         held[label] = false
@@ -81,7 +98,7 @@ func _ready() -> void:
     score_label = Label.new()
     score_label.position = Vector2(495, 20)
     score_label.add_theme_font_size_override("font_size", 22)
-    score_label.text = "PLAYER 0 : 0 ENEMY"
+    score_label.text = "ИГРОК 0 : 0 ПРОТИВНИК"
     add_child(score_label)
     result_label = Label.new()
     result_label.position = Vector2(500, 280)
@@ -89,20 +106,20 @@ func _ready() -> void:
     result_label.visible = false
     add_child(result_label)
     restart_button = Button.new()
-    restart_button.text = "RESTART"
-    restart_button.position = Vector2(760, 620)
-    restart_button.size = Vector2(170, 80)
+    restart_button.text = "ЗАНОВО"
+    restart_button.position = Vector2(740, 625)
+    restart_button.size = Vector2(145, 65)
     restart_button.visible = false
     restart_button.pressed.connect(restart_round)
     add_child(restart_button)
     cooldown_label = Label.new()
-    cooldown_label.position = Vector2(620, 625)
+    cooldown_label.position = Vector2(640, 650)
     cooldown_label.add_theme_font_size_override("font_size", 17)
     add_child(cooldown_label)
     pause_button = Button.new()
-    pause_button.text = "MENU"
-    pause_button.position = Vector2(1110, 625)
-    pause_button.size = Vector2(140, 65)
+    pause_button.text = "МЕНЮ"
+    pause_button.position = Vector2(1100, 10)
+    pause_button.size = Vector2(155, 52)
     pause_button.pressed.connect(show_menu)
     add_child(pause_button)
     menu_layer = Control.new()
@@ -269,6 +286,9 @@ func restart_round() -> void:
     velocity_y = 0.0
     attack_cooldown = 0.0
     enemy_cooldown = 0.0
+    combo_hits = 0
+    combo_timer = 0.0
+    block_timer = 0.0
     round_over = false
     player_attack_fx = 0.0
     enemy_attack_fx = 0.0
@@ -287,11 +307,11 @@ func finish_round(player_won: bool) -> void:
     round_over = true
     if player_won:
         player_wins += 1
-        result_label.text = "YOU WIN!"
+        result_label.text = "ПОБЕДА!"
     else:
         enemy_wins += 1
-        result_label.text = "YOU LOSE!"
-    score_label.text = "PLAYER %d : %d ENEMY" % [player_wins, enemy_wins]
+        result_label.text = "ПОРАЖЕНИЕ!"
+    score_label.text = "ИГРОК %d : %d ПРОТИВНИК" % [player_wins, enemy_wins]
     result_label.visible = true
     restart_button.visible = true
 
@@ -301,10 +321,27 @@ func make_rig() -> Dictionary:
         anchors[name] = Vector2.ZERO
     return anchors
 
+func _input(event: InputEvent) -> void:
+    if in_menu:
+        return
+    if event is InputEventScreenTouch:
+        if event.pressed and event.position.distance_to(joystick_center) < 105.0 and joystick_touch == -1:
+            joystick_touch = event.index
+            joystick_axis = clampf((event.position.x - joystick_center.x) / 58.0, -1.0, 1.0)
+        elif not event.pressed and event.index == joystick_touch:
+            joystick_touch = -1
+            joystick_axis = 0.0
+    elif event is InputEventScreenDrag and event.index == joystick_touch:
+        joystick_axis = clampf((event.position.x - joystick_center.x) / 58.0, -1.0, 1.0)
+
 func _process(delta: float) -> void:
     if round_over or in_menu:
         return
     animation_clock += delta
+    combo_timer = maxf(0.0, combo_timer - delta)
+    block_timer = maxf(0.0, block_timer - delta)
+    if combo_timer <= 0.0:
+        combo_hits = 0
     player_motion = 0.0
     enemy_motion = 0.0
     player_attack_fx = maxf(0.0, player_attack_fx - delta)
@@ -314,11 +351,14 @@ func _process(delta: float) -> void:
     ai_timer -= delta
     attack_cooldown = maxf(0, attack_cooldown - delta)
     enemy_cooldown = maxf(0, enemy_cooldown - delta)
-    var left_pressed: bool = Input.is_key_pressed(KEY_A) or held["LEFT"]
-    var right_pressed: bool = Input.is_key_pressed(KEY_D) or held["RIGHT"]
+    var left_pressed: bool = Input.is_key_pressed(KEY_A) or joystick_axis < -0.2
+    var right_pressed: bool = Input.is_key_pressed(KEY_D) or joystick_axis > 0.2
     var jump_pressed: bool = Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_W) or held["JUMP"]
     var hit_pressed: bool = Input.is_key_pressed(KEY_J) or held["HIT"]
-    player_motion = float(right_pressed) - float(left_pressed)
+    player_motion = joystick_axis if absf(joystick_axis) > 0.2 else float(right_pressed) - float(left_pressed)
+    if held["BLOCK"] or Input.is_key_pressed(KEY_K):
+        block_timer = 0.15
+        player_motion *= 0.35
     x_left += player_motion * 330 * delta
     x_left = clampf(x_left, 50, 1230)
     if jump_pressed and y_left >= 610:
@@ -328,12 +368,15 @@ func _process(delta: float) -> void:
     y_left = minf(610, y_left + velocity_y * delta)
     if y_left >= 610:
         velocity_y = 0
-    if hit_pressed and attack_cooldown <= 0:
-        attack_cooldown = 0.55
+    var skill_pressed: bool = held["SKILL"] or Input.is_key_pressed(KEY_L)
+    if (hit_pressed or skill_pressed) and attack_cooldown <= 0 and block_timer <= 0.0:
+        attack_cooldown = 0.8 if skill_pressed else 0.43
         player_attack_fx = 0.18
         play_sound("swing")
-        if absf(x_left - x_right) < 145.0 and absf(y_left - 610.0) < 115.0:
-            hp_right = maxi(0, hp_right - 10)
+        if absf(x_left - x_right) < (195.0 if skill_pressed else 155.0) and absf(y_left - 610.0) < 115.0:
+            combo_hits += 1
+            combo_timer = 1.3
+            hp_right = maxi(0, hp_right - (18 if skill_pressed else 8 + mini(combo_hits, 4)))
             enemy_hit_fx = 0.22
             play_sound("hit")
             if hp_right == 0:
@@ -361,17 +404,24 @@ func _process(delta: float) -> void:
             play_sound("swing")
             player_hit_fx = 0.22
             play_sound("hit")
-            hp_left = maxi(0, hp_left - 7)
+            hp_left = maxi(0, hp_left - (2 if block_timer > 0.0 else 7))
             if hp_left == 0:
                 finish_round(false)
-    cooldown_label.text = "HIT READY" if attack_cooldown <= 0.0 else "HIT %.1fs" % attack_cooldown
+    cooldown_label.text = ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
     queue_redraw()
 
 func _draw() -> void:
     draw_rect(Rect2(0, 0, 1280, 720), Color("#10152e"))
+    for i in range(8):
+        var px := float(i * 195 - 80)
+        draw_colored_polygon(PackedVector2Array([Vector2(px, 610), Vector2(px + 110, 280 + (i % 3) * 42), Vector2(px + 210, 610)]), Color("#1c1a3b"))
     draw_circle(Vector2(640, 180), 110, Color("#42396e"))
     draw_rect(Rect2(0, 610, 1280, 110), Color("#2a2544"))
     draw_line(Vector2(0, 610), Vector2(1280, 610), Color("#8e84be"), 4)
+    if not in_menu:
+        draw_circle(joystick_center, 72.0, Color("#3b3558", 0.78))
+        draw_arc(joystick_center, 72.0, 0.0, TAU, 48, Color("#aa9bcf"), 3.0)
+        draw_circle(joystick_center + Vector2(joystick_axis * 43.0, 0), 32.0, Color("#9788c2", 0.9))
     draw_fighter(Vector2(x_left, y_left), Color("#ffffff") if player_hit_fx > 0.0 else fighter_colors[selected_fighter], player_attack_fx > 0.0, x_right >= x_left, player_motion, true)
     draw_fighter(Vector2(x_right, 610), Color("#ffffff") if enemy_hit_fx > 0.0 else fighter_colors[enemy_fighter], enemy_attack_fx > 0.0, x_left >= x_right, enemy_motion, false)
     if enemy_hit_fx > 0.0:
@@ -403,7 +453,16 @@ func draw_fighter(origin: Vector2, color: Color, attacking: bool, face_right: bo
         draw_line(body + Vector2(22, -108), body + Vector2(37, -73 - step * 0.35), color, 17.0)
     draw_line(body + Vector2(-22, -72), body + Vector2(22, -72), trim, 5.0)
     draw_colored_polygon(PackedVector2Array([body + Vector2(-27, -76), body + Vector2(27, -76), body + Vector2(36, -45), body + Vector2(-36, -45)]), color.darkened(0.12))
+    if attacking:
+        var weapon_color := Color("#bdeeff") if fighter_id == 0 else Color("#ffb1bb") if fighter_id == 1 else Color("#f4d6a0") if fighter_id == 2 else Color("#d4a3ff")
+        draw_line(body + Vector2(84 * facing, -105), body + Vector2(140 * facing, -154), weapon_color, 9.0)
+        draw_line(body + Vector2(135 * facing, -150), body + Vector2(151 * facing, -165), Color.WHITE, 4.0)
     draw_circle(body + Vector2(0, -159), 26.0, Color("#f2d0b3"))
+    var remaining_hp: int = hp_left if is_player else hp_right
+    if remaining_hp < 60:
+        draw_line(body + Vector2(-15,-113), body + Vector2(5,-97), Color("#5d2d49"), 3.0)
+    if remaining_hp < 30:
+        draw_line(body + Vector2(8,-87), body + Vector2(24,-77), Color("#b35c65"), 3.0)
     draw_arc(body + Vector2(0, -164), 27.0, PI, TAU, 18, hair, 12.0)
     if fighter_id == 0:
         draw_line(body + Vector2(-19, -182), body + Vector2(-29, -215), Color("#b83b37"), 11.0)
