@@ -44,6 +44,7 @@ var selection_title: Label
 var selection_buttons: Array[Button] = []
 var player_name_label: Label
 var enemy_name_label: Label
+var fighter_textures: Array[Texture2D] = []
 var joystick_center := Vector2(112, 643)
 var joystick_axis := 0.0
 var joystick_touch := -1
@@ -52,6 +53,8 @@ var combo_timer := 0.0
 var block_timer := 0.0
 
 func _ready() -> void:
+    for character in ["yamato", "erza", "alpha", "rias"]:
+        fighter_textures.append(load("res://assets/fighters/%s.svg" % character))
     sound_library["swing"] = make_sound(0.13, 220.0, 90.0, 0.14, 0)
     sound_library["hit"] = make_sound(0.19, 130.0, 45.0, 0.29, 1)
     sound_library["jump"] = make_sound(0.17, 280.0, 570.0, 0.13, 0)
@@ -184,6 +187,10 @@ func _ready() -> void:
     for i in range(fighter_names.size()):
         var fighter_button := Button.new()
         fighter_button.text = fighter_names[i]
+        fighter_button.icon = fighter_textures[i]
+        fighter_button.expand_icon = true
+        fighter_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        fighter_button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
         fighter_button.position = Vector2(75 + i * 295, 220)
         fighter_button.size = Vector2(255, 270)
         fighter_button.add_theme_font_size_override("font_size", 29)
@@ -422,8 +429,8 @@ func _draw() -> void:
         draw_circle(joystick_center, 72.0, Color("#3b3558", 0.78))
         draw_arc(joystick_center, 72.0, 0.0, TAU, 48, Color("#aa9bcf"), 3.0)
         draw_circle(joystick_center + Vector2(joystick_axis * 43.0, 0), 32.0, Color("#9788c2", 0.9))
-    draw_fighter(Vector2(x_left, y_left), Color("#ffffff") if player_hit_fx > 0.0 else fighter_colors[selected_fighter], player_attack_fx > 0.0, x_right >= x_left, player_motion, true)
-    draw_fighter(Vector2(x_right, 610), Color("#ffffff") if enemy_hit_fx > 0.0 else fighter_colors[enemy_fighter], enemy_attack_fx > 0.0, x_left >= x_right, enemy_motion, false)
+    draw_sprite_fighter(Vector2(x_left, y_left), selected_fighter, x_right >= x_left, player_motion, player_attack_fx, player_hit_fx, hp_left)
+    draw_sprite_fighter(Vector2(x_right, 610), enemy_fighter, x_left >= x_right, enemy_motion, enemy_attack_fx, enemy_hit_fx, hp_right)
     if enemy_hit_fx > 0.0:
         draw_circle(Vector2(x_right, 470), 12.0 + enemy_hit_fx * 55.0, Color("#ffd56c", enemy_hit_fx * 3.0))
     if player_hit_fx > 0.0:
@@ -432,6 +439,28 @@ func _draw() -> void:
     draw_rect(Rect2(830, 35, 400, 26), Color("#393349"))
     draw_rect(Rect2(50, 35, hp_left * 4, 26), Color("#80d6ae"))
     draw_rect(Rect2(830, 35, hp_right * 4, 26), Color("#df738f"))
+
+func draw_sprite_fighter(origin: Vector2, fighter_id: int, face_right: bool, motion: float, attack_fx: float, hit_fx: float, health: int) -> void:
+    if fighter_id >= fighter_textures.size() or fighter_textures[fighter_id] == null:
+        return
+    var bob := sin(animation_clock * 12.0) * 3.0 if absf(motion) > 0.1 else sin(animation_clock * 2.0) * 1.7
+    var direction := 1.0 if face_right else -1.0
+    var body_height := 216.0
+    var body_width := 134.0
+    var lean := attack_fx * 42.0 * direction
+    var destination := Rect2(origin.x - body_width * 0.5 + lean, origin.y - body_height - bob, body_width, body_height)
+    draw_texture_rect(fighter_textures[fighter_id], destination, false, Color("#ffd6d6") if hit_fx > 0.0 else Color.WHITE)
+    if attack_fx > 0.0:
+        var glow := Color("#9eeaff") if fighter_id == 0 else Color("#ff9da7") if fighter_id == 1 else Color("#f9d799") if fighter_id == 2 else Color("#caa1ff")
+        var hand := origin + Vector2(42.0 * direction, -135.0)
+        var tip := hand + Vector2(110.0 * direction, -42.0)
+        draw_line(hand, tip, glow, 9.0)
+        draw_line(hand, tip, Color.WHITE, 2.0)
+        draw_arc(tip, 35.0, 0.0, TAU, 24, Color(glow, 0.45), 5.0)
+    if health < 60:
+        draw_line(origin + Vector2(-12, -91), origin + Vector2(9, -72), Color("#7e334b"), 3.0)
+    if health < 30:
+        draw_line(origin + Vector2(18, -129), origin + Vector2(33, -109), Color("#a9545d"), 4.0)
 
 func draw_fighter(origin: Vector2, color: Color, attacking: bool, face_right: bool, motion: float, is_player: bool) -> void:
     var facing: float = 1.0 if face_right else -1.0
