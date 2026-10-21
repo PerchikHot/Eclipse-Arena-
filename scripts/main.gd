@@ -28,6 +28,9 @@ var animation_clock := 0.0
 var player_motion := 0.0
 var enemy_motion := 0.0
 var cooldown_label: Label
+var in_menu := true
+var menu_layer: Control
+var pause_button: Button
 
 func _ready() -> void:
     left_rig = make_rig()
@@ -64,6 +67,74 @@ func _ready() -> void:
     cooldown_label.position = Vector2(620, 625)
     cooldown_label.add_theme_font_size_override("font_size", 17)
     add_child(cooldown_label)
+    pause_button = Button.new()
+    pause_button.text = "MENU"
+    pause_button.position = Vector2(1110, 625)
+    pause_button.size = Vector2(140, 65)
+    pause_button.pressed.connect(show_menu)
+    add_child(pause_button)
+    menu_layer = Control.new()
+    menu_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    add_child(menu_layer)
+    var shade := ColorRect.new()
+    shade.color = Color(0.035, 0.045, 0.12, 0.96)
+    shade.size = Vector2(1280, 720)
+    menu_layer.add_child(shade)
+    var title := Label.new()
+    title.text = "ECLIPSE ARENA"
+    title.position = Vector2(320, 125)
+    title.size = Vector2(640, 85)
+    title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    title.add_theme_font_size_override("font_size", 60)
+    title.add_theme_color_override("font_color", Color("#e6d1ff"))
+    menu_layer.add_child(title)
+    var subtitle := Label.new()
+    subtitle.text = "SHADOWS  •  FIGHT  •  ECLIPSE"
+    subtitle.position = Vector2(320, 225)
+    subtitle.size = Vector2(640, 40)
+    subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    subtitle.add_theme_font_size_override("font_size", 23)
+    menu_layer.add_child(subtitle)
+    var start_button := Button.new()
+    start_button.text = "CONTINUE / FIGHT"
+    start_button.position = Vector2(465, 335)
+    start_button.size = Vector2(350, 90)
+    start_button.add_theme_font_size_override("font_size", 29)
+    start_button.pressed.connect(start_game)
+    menu_layer.add_child(start_button)
+    var reset_button := Button.new()
+    reset_button.text = "NEW MATCH"
+    reset_button.position = Vector2(465, 450)
+    reset_button.size = Vector2(350, 75)
+    reset_button.pressed.connect(func() -> void:
+        restart_round()
+        start_game()
+    )
+    menu_layer.add_child(reset_button)
+    var version_label := Label.new()
+    version_label.text = "ANDROID PROTOTYPE  •  v0.4"
+    version_label.position = Vector2(480, 640)
+    version_label.add_theme_font_size_override("font_size", 18)
+    menu_layer.add_child(version_label)
+    show_menu()
+
+func show_menu() -> void:
+    in_menu = true
+    menu_layer.visible = true
+    for key in controls.keys():
+        controls[key].visible = false
+    pause_button.visible = false
+    cooldown_label.visible = false
+    restart_button.visible = false
+
+func start_game() -> void:
+    in_menu = false
+    menu_layer.visible = false
+    for key in controls.keys():
+        controls[key].visible = true
+    pause_button.visible = true
+    cooldown_label.visible = true
+    restart_button.visible = round_over
 
 func restart_round() -> void:
     hp_left = 100
@@ -106,7 +177,7 @@ func make_rig() -> Dictionary:
     return anchors
 
 func _process(delta: float) -> void:
-    if round_over:
+    if round_over or in_menu:
         return
     animation_clock += delta
     player_motion = 0.0
