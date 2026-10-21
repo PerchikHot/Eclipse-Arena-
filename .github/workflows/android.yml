@@ -41,7 +41,10 @@ jobs:
       - name: Import project
         run: godot --headless --path . --editor --quit
       - name: Configure Godot Android SDK paths
-        run: godot --headless --editor --path . --script ci/configure_android.gd
+        run: |
+          mkdir -p "$HOME/.config/godot"
+          printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' "$ANDROID_HOME" "$JAVA_HOME" > "$HOME/.config/godot/editor_settings-4.3.tres"
+          cat "$HOME/.config/godot/editor_settings-4.3.tres"
       - name: Export debug APK
         run: |
           mkdir -p build
