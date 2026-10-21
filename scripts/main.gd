@@ -37,10 +37,10 @@ func make_rig() -> Dictionary:
 func _process(delta: float) -> void:
     attack_cooldown = maxf(0, attack_cooldown - delta)
     enemy_cooldown = maxf(0, enemy_cooldown - delta)
-    var left_pressed := Input.is_key_pressed(KEY_A) or held["LEFT"]
-    var right_pressed := Input.is_key_pressed(KEY_D) or held["RIGHT"]
-    var jump_pressed := Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_W) or held["JUMP"]
-    var hit_pressed := Input.is_key_pressed(KEY_J) or held["HIT"]
+    var left_pressed: bool = Input.is_key_pressed(KEY_A) or held["LEFT"]
+    var right_pressed: bool = Input.is_key_pressed(KEY_D) or held["RIGHT"]
+    var jump_pressed: bool = Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_W) or held["JUMP"]
+    var hit_pressed: bool = Input.is_key_pressed(KEY_J) or held["HIT"]
     x_left += (float(right_pressed) - float(left_pressed)) * 330 * delta
     x_left = clampf(x_left, 50, 1230)
     if jump_pressed and y_left >= 610:
