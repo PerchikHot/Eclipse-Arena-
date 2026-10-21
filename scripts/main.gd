@@ -51,6 +51,7 @@ var costume_button: Button
 var selection_preview: TextureRect
 var selection_name: Label
 var selection_choice := 0
+var impact_flash := 0.0
 var joystick_center := Vector2(112, 643)
 var joystick_axis := 0.0
 var joystick_touch := -1
@@ -261,6 +262,7 @@ func preview_fighter(index: int) -> void:
 func cycle_costume() -> void:
     selected_costume = (selected_costume + 1) % costume_names.size()
     costume_button.text = "КОСТЮМ: " + costume_names[selected_costume]
+    selection_preview.modulate = Color.WHITE if selected_costume == 0 else Color("#c9d7ff") if selected_costume == 1 else Color("#ffc4d9")
     play_sound("menu")
 
 func select_fighter(index: int) -> void:
@@ -388,6 +390,7 @@ func _process(delta: float) -> void:
     if round_over or in_menu:
         return
     animation_clock += delta
+    impact_flash = maxf(0.0, impact_flash - delta)
     combo_timer = maxf(0.0, combo_timer - delta)
     block_timer = maxf(0.0, block_timer - delta)
     if combo_timer <= 0.0:
@@ -428,6 +431,7 @@ func _process(delta: float) -> void:
             combo_timer = 1.3
             hp_right = maxi(0, hp_right - (18 if skill_pressed else 8 + mini(combo_hits, 4)))
             enemy_hit_fx = 0.22
+            impact_flash = 0.15
             play_sound("hit")
             if hp_right == 0:
                 finish_round(true)
@@ -453,6 +457,7 @@ func _process(delta: float) -> void:
             enemy_attack_fx = 0.18
             play_sound("swing")
             player_hit_fx = 0.22
+            impact_flash = 0.15
             play_sound("hit")
             hp_left = maxi(0, hp_left - (2 if block_timer > 0.0 else 7))
             if hp_left == 0:
@@ -478,6 +483,8 @@ func _draw() -> void:
         draw_circle(Vector2(x_right, 470), 12.0 + enemy_hit_fx * 55.0, Color("#ffd56c", enemy_hit_fx * 3.0))
     if player_hit_fx > 0.0:
         draw_circle(Vector2(x_left, y_left - 140.0), 12.0 + player_hit_fx * 55.0, Color("#ffd56c", player_hit_fx * 3.0))
+    if impact_flash > 0.0:
+        draw_rect(Rect2(0, 0, 1280, 610), Color(1.0, 0.9, 0.96, impact_flash))
     draw_rect(Rect2(50, 35, 400, 26), Color("#393349"))
     draw_rect(Rect2(830, 35, 400, 26), Color("#393349"))
     draw_rect(Rect2(50, 35, hp_left * 4, 26), Color("#80d6ae"))
@@ -490,7 +497,7 @@ func draw_sprite_fighter(origin: Vector2, fighter_id: int, face_right: bool, mot
     var direction := 1.0 if face_right else -1.0
     var body_height := 216.0
     var body_width := 134.0
-    var lean := attack_fx * 42.0 * direction
+    var lean := attack_fx * 95.0 * direction - hit_fx * 80.0 * direction
     var destination := Rect2(origin.x - body_width * 0.5 + lean, origin.y - body_height - bob, body_width, body_height)
     var costume_tint := Color.WHITE
     if fighter_id == selected_fighter:
@@ -506,6 +513,7 @@ func draw_sprite_fighter(origin: Vector2, fighter_id: int, face_right: bool, mot
         draw_line(hand, tip, glow, 9.0)
         draw_line(hand, tip, Color.WHITE, 2.0)
         draw_arc(tip, 35.0, 0.0, TAU, 24, Color(glow, 0.45), 5.0)
+        draw_arc(hand, 70.0, -1.0, 1.0, 28, Color(glow, attack_fx * 3.0), 5.0)
     if health < 60:
         draw_line(origin + Vector2(-12, -91), origin + Vector2(9, -72), Color("#7e334b"), 3.0)
     if health < 30:
