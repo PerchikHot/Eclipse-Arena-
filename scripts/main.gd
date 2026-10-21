@@ -76,35 +76,38 @@ func _ready() -> void:
     menu_layer = Control.new()
     menu_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     add_child(menu_layer)
-    var shade := ColorRect.new()
-    shade.color = Color(0.035, 0.045, 0.12, 0.96)
-    shade.size = Vector2(1280, 720)
-    menu_layer.add_child(shade)
+    var background := TextureRect.new()
+    background.texture = load("res://assets/menu_background.svg")
+    background.position = Vector2.ZERO
+    background.size = Vector2(1280, 720)
+    background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    background.stretch_mode = TextureRect.STRETCH_SCALE
+    menu_layer.add_child(background)
     var title := Label.new()
-    title.text = "ECLIPSE ARENA"
-    title.position = Vector2(320, 125)
-    title.size = Vector2(640, 85)
+    title.text = "ECLIPSE\nARENA"
+    title.position = Vector2(42, 70)
+    title.size = Vector2(380, 165)
     title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    title.add_theme_font_size_override("font_size", 60)
-    title.add_theme_color_override("font_color", Color("#e6d1ff"))
+    title.add_theme_font_size_override("font_size", 62)
+    title.add_theme_color_override("font_color", Color("#e9c8ff"))
     menu_layer.add_child(title)
     var subtitle := Label.new()
-    subtitle.text = "SHADOWS  •  FIGHT  •  ECLIPSE"
-    subtitle.position = Vector2(320, 225)
-    subtitle.size = Vector2(640, 40)
+    subtitle.text = "ANIME FIGHTING ARENA"
+    subtitle.position = Vector2(42, 250)
+    subtitle.size = Vector2(380, 40)
     subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     subtitle.add_theme_font_size_override("font_size", 23)
     menu_layer.add_child(subtitle)
     var start_button := Button.new()
-    start_button.text = "CONTINUE / FIGHT"
-    start_button.position = Vector2(465, 335)
-    start_button.size = Vector2(350, 90)
+    start_button.text = "⚔  БЫСТРЫЙ БОЙ"
+    start_button.position = Vector2(55, 335)
+    start_button.size = Vector2(350, 75)
     start_button.add_theme_font_size_override("font_size", 29)
     start_button.pressed.connect(start_game)
     menu_layer.add_child(start_button)
     var reset_button := Button.new()
-    reset_button.text = "NEW MATCH"
-    reset_button.position = Vector2(465, 450)
+    reset_button.text = "НОВЫЙ БОЙ"
+    reset_button.position = Vector2(55, 430)
     reset_button.size = Vector2(350, 75)
     reset_button.pressed.connect(func() -> void:
         restart_round()
@@ -113,7 +116,7 @@ func _ready() -> void:
     menu_layer.add_child(reset_button)
     var version_label := Label.new()
     version_label.text = "ANDROID PROTOTYPE  •  v0.4"
-    version_label.position = Vector2(480, 640)
+    version_label.position = Vector2(65, 650)
     version_label.add_theme_font_size_override("font_size", 18)
     menu_layer.add_child(version_label)
     show_menu()
