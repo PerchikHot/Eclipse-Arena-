@@ -1,0 +1,44 @@
+name: Android debug APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.3 and export templates
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          sudo mv Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
+          mkdir -p ~/.local/share/godot/export_templates/4.3.stable
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          unzip -q Godot_v4.3-stable_export_templates.tpz
+          cp templates/* ~/.local/share/godot/export_templates/4.3.stable/
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - name: Create debug signing key
+        run: |
+          keytool -genkeypair -noprompt -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -keystore "$RUNNER_TEMP/debug.keystore" -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/debug.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+      - name: Import project
+        run: godot --headless --path . --editor --quit
+      - name: Export debug APK
+        run: |
+          mkdir -p build
+          godot --headless --path . --export-debug "Android" build/EclipseArena-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EclipseArena-Android-debug
+          path: build/EclipseArena-debug.apk
+          if-no-files-found: error
