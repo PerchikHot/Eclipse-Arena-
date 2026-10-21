@@ -11,6 +11,7 @@ var enemy_cooldown := 0.0
 var left_rig := {}
 var right_rig := {}
 var controls := {}
+var held := {}
 
 func _ready() -> void:
     left_rig = make_rig()
@@ -23,6 +24,9 @@ func _ready() -> void:
         button.modulate.a = 0.8
         add_child(button)
         controls[label] = button
+        held[label] = false
+        button.button_down.connect(func(): held[label] = true)
+        button.button_up.connect(func(): held[label] = false)
 
 func make_rig() -> Dictionary:
     var anchors := {}
@@ -33,10 +37,10 @@ func make_rig() -> Dictionary:
 func _process(delta: float) -> void:
     attack_cooldown = maxf(0, attack_cooldown - delta)
     enemy_cooldown = maxf(0, enemy_cooldown - delta)
-    var left_pressed := Input.is_key_pressed(KEY_A) or controls["LEFT"].button_pressed
-    var right_pressed := Input.is_key_pressed(KEY_D) or controls["RIGHT"].button_pressed
-    var jump_pressed := Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_W) or controls["JUMP"].button_pressed
-    var hit_pressed := Input.is_key_pressed(KEY_J) or controls["HIT"].button_pressed
+    var left_pressed := Input.is_key_pressed(KEY_A) or held["LEFT"]
+    var right_pressed := Input.is_key_pressed(KEY_D) or held["RIGHT"]
+    var jump_pressed := Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_W) or held["JUMP"]
+    var hit_pressed := Input.is_key_pressed(KEY_J) or held["HIT"]
     x_left += (float(right_pressed) - float(left_pressed)) * 330 * delta
     x_left = clampf(x_left, 50, 1230)
     if jump_pressed and y_left >= 610:
