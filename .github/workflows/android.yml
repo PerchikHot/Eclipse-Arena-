@@ -40,6 +40,8 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
       - name: Import project
         run: godot --headless --path . --editor --quit
+      - name: Configure Godot Android SDK paths
+        run: godot --headless --editor --path . --script ci/configure_android.gd
       - name: Export debug APK
         run: |
           mkdir -p build
