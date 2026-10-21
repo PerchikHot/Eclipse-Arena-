@@ -18,6 +18,12 @@ var enemy_wins := 0
 var score_label: Label
 var result_label: Label
 var restart_button: Button
+var player_attack_fx := 0.0
+var enemy_attack_fx := 0.0
+var player_hit_fx := 0.0
+var enemy_hit_fx := 0.0
+var ai_timer := 0.0
+var ai_retreat := false
 
 func _ready() -> void:
     left_rig = make_rig()
@@ -61,6 +67,12 @@ func restart_round() -> void:
     attack_cooldown = 0.0
     enemy_cooldown = 0.0
     round_over = false
+    player_attack_fx = 0.0
+    enemy_attack_fx = 0.0
+    player_hit_fx = 0.0
+    enemy_hit_fx = 0.0
+    ai_timer = 0.0
+    ai_retreat = false
     result_label.visible = false
     restart_button.visible = false
     queue_redraw()
@@ -88,6 +100,11 @@ func make_rig() -> Dictionary:
 func _process(delta: float) -> void:
     if round_over:
         return
+    player_attack_fx = maxf(0.0, player_attack_fx - delta)
+    enemy_attack_fx = maxf(0.0, enemy_attack_fx - delta)
+    player_hit_fx = maxf(0.0, player_hit_fx - delta)
+    enemy_hit_fx = maxf(0.0, enemy_hit_fx - delta)
+    ai_timer -= delta
     attack_cooldown = maxf(0, attack_cooldown - delta)
     enemy_cooldown = maxf(0, enemy_cooldown - delta)
     var left_pressed: bool = Input.is_key_pressed(KEY_A) or held["LEFT"]
@@ -102,16 +119,33 @@ func _process(delta: float) -> void:
     y_left = minf(610, y_left + velocity_y * delta)
     if y_left >= 610:
         velocity_y = 0
+    if absf(x_left - x_right) < 74.0 and absf(y_left - 610.0) < 100.0:
+        var center: float = (x_left + x_right) * 0.5
+        var direction: float = 1.0 if x_left <= x_right else -1.0
+        x_left = clampf(center - direction * 37.0, 50.0, 1230.0)
+        x_right = clampf(center + direction * 37.0, 50.0, 1230.0)
     if hit_pressed and attack_cooldown <= 0:
         attack_cooldown = 0.55
+        player_attack_fx = 0.18
         if absf(x_left - x_right) < 145:
             hp_right = maxi(0, hp_right - 10)
+            enemy_hit_fx = 0.22
             if hp_right == 0:
                 finish_round(true)
     if hp_left > 0 and hp_right > 0:
-        x_right += signf(x_left - x_right) * 170 * delta if absf(x_left - x_right) > 110 else 0.0
+        var distance: float = absf(x_left - x_right)
+        if ai_timer <= 0.0:
+            ai_timer = 1.1
+            ai_retreat = distance < 185.0 and randf() < 0.35
+        if ai_retreat and distance < 240.0:
+            x_right -= signf(x_left - x_right) * 110.0 * delta
+        elif distance > 110.0:
+            x_right += signf(x_left - x_right) * 170.0 * delta
+        x_right = clampf(x_right, 50.0, 1230.0)
         if absf(x_left - x_right) < 140 and enemy_cooldown <= 0:
-            enemy_cooldown = 0.85
+            enemy_cooldown = 0.95
+            enemy_attack_fx = 0.18
+            player_hit_fx = 0.22
             hp_left = maxi(0, hp_left - 7)
             if hp_left == 0:
                 finish_round(false)
@@ -122,17 +156,25 @@ func _draw() -> void:
     draw_circle(Vector2(640, 180), 110, Color("#42396e"))
     draw_rect(Rect2(0, 610, 1280, 110), Color("#2a2544"))
     draw_line(Vector2(0, 610), Vector2(1280, 610), Color("#8e84be"), 4)
-    draw_fighter(Vector2(x_left, y_left), Color("#cdb879"))
-    draw_fighter(Vector2(x_right, 610), Color("#b44363"))
+    draw_fighter(Vector2(x_left, y_left), Color("#ffffff") if player_hit_fx > 0.0 else Color("#cdb879"), player_attack_fx > 0.0, x_right >= x_left)
+    draw_fighter(Vector2(x_right, 610), Color("#ffffff") if enemy_hit_fx > 0.0 else Color("#b44363"), enemy_attack_fx > 0.0, x_left >= x_right)
+    if enemy_hit_fx > 0.0:
+        draw_circle(Vector2(x_right, 470), 12.0 + enemy_hit_fx * 55.0, Color("#ffd56c", enemy_hit_fx * 3.0))
+    if player_hit_fx > 0.0:
+        draw_circle(Vector2(x_left, y_left - 140.0), 12.0 + player_hit_fx * 55.0, Color("#ffd56c", player_hit_fx * 3.0))
     draw_rect(Rect2(50, 35, 400, 26), Color("#393349"))
     draw_rect(Rect2(830, 35, 400, 26), Color("#393349"))
     draw_rect(Rect2(50, 35, hp_left * 4, 26), Color("#80d6ae"))
     draw_rect(Rect2(830, 35, hp_right * 4, 26), Color("#df738f"))
 
-func draw_fighter(origin: Vector2, color: Color) -> void:
+func draw_fighter(origin: Vector2, color: Color, attacking: bool, face_right: bool) -> void:
     draw_rect(Rect2(origin + Vector2(-24, -125), Vector2(48, 75)), color)
     draw_circle(origin + Vector2(0, -160), 25, Color("#f2d0b3"))
     draw_line(origin + Vector2(-15, -50), origin + Vector2(-20, -5), color, 19)
     draw_line(origin + Vector2(15, -50), origin + Vector2(20, -5), color, 19)
     draw_line(origin + Vector2(-20, -115), origin + Vector2(-38, -73), color, 15)
-    draw_line(origin + Vector2(20, -115), origin + Vector2(38, -73), color, 15)
+    if attacking:
+        var side: float = 1.0 if face_right else -1.0
+        draw_line(origin + Vector2(20.0 * side, -115), origin + Vector2(75.0 * side, -110), color, 16)
+    else:
+        draw_line(origin + Vector2(20, -115), origin + Vector2(38, -73), color, 15)
