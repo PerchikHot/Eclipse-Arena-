@@ -28,8 +28,10 @@ jobs:
           echo "ANDROID_SDK_ROOT=${ANDROID_HOME:-/usr/local/lib/android/sdk}" >> "$GITHUB_ENV"
       - name: Install Android SDK packages
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
+          test -n "$SDKMANAGER" || { echo "Android sdkmanager not found"; exit 1; }
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
       - name: Create debug signing key
         run: |
           keytool -genkeypair -noprompt -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -keystore "$RUNNER_TEMP/debug.keystore" -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
