@@ -31,8 +31,22 @@ var cooldown_label: Label
 var in_menu := true
 var menu_layer: Control
 var pause_button: Button
+var audio_players: Array[AudioStreamPlayer] = []
+var sound_library: Dictionary = {}
+var sound_slot := 0
 
 func _ready() -> void:
+    sound_library["swing"] = make_sound(0.13, 220.0, 90.0, 0.14, 0)
+    sound_library["hit"] = make_sound(0.19, 130.0, 45.0, 0.29, 1)
+    sound_library["jump"] = make_sound(0.17, 280.0, 570.0, 0.13, 0)
+    sound_library["victory"] = make_sound(0.55, 420.0, 840.0, 0.15, 0)
+    sound_library["defeat"] = make_sound(0.48, 320.0, 90.0, 0.15, 0)
+    sound_library["menu"] = make_sound(0.11, 470.0, 720.0, 0.11, 0)
+    for i in range(6):
+        var audio := AudioStreamPlayer.new()
+        audio.volume_db = -7.0
+        add_child(audio)
+        audio_players.append(audio)
     left_rig = make_rig()
     right_rig = make_rig()
     for label in ["LEFT", "RIGHT", "JUMP", "HIT"]:
@@ -121,7 +135,40 @@ func _ready() -> void:
     menu_layer.add_child(version_label)
     show_menu()
 
+func make_sound(duration: float, start_hz: float, end_hz: float, volume: float, noise_mix: int) -> AudioStreamWAV:
+    var sample_rate := 22050
+    var sample_count := int(duration * float(sample_rate))
+    var bytes := PackedByteArray()
+    bytes.resize(sample_count * 2)
+    var phase := 0.0
+    for i in range(sample_count):
+        var t: float = float(i) / float(sample_count)
+        var hz: float = lerpf(start_hz, end_hz, t)
+        phase += TAU * hz / float(sample_rate)
+        var envelope: float = pow(1.0 - t, 2.0) * minf(1.0, t * 80.0)
+        var wave: float = sin(phase) * (1.0 - float(noise_mix) * 0.5)
+        if noise_mix == 1:
+            wave += randf_range(-0.6, 0.6)
+        var sample: int = clampi(int(wave * envelope * volume * 32767.0), -32768, 32767)
+        bytes.encode_s16(i * 2, sample)
+    var sound := AudioStreamWAV.new()
+    sound.format = AudioStreamWAV.FORMAT_16_BITS
+    sound.mix_rate = sample_rate
+    sound.stereo = false
+    sound.data = bytes
+    return sound
+
+func play_sound(sound_name: String) -> void:
+    if not sound_library.has(sound_name):
+        return
+    var player: AudioStreamPlayer = audio_players[sound_slot]
+    sound_slot = (sound_slot + 1) % audio_players.size()
+    player.stop()
+    player.stream = sound_library[sound_name]
+    player.play()
+
 func show_menu() -> void:
+    play_sound("menu")
     in_menu = true
     menu_layer.visible = true
     for key in controls.keys():
@@ -131,6 +178,7 @@ func show_menu() -> void:
     restart_button.visible = false
 
 func start_game() -> void:
+    play_sound("menu")
     in_menu = false
     menu_layer.visible = false
     for key in controls.keys():
@@ -160,6 +208,7 @@ func restart_round() -> void:
     queue_redraw()
 
 func finish_round(player_won: bool) -> void:
+    play_sound("victory" if player_won else "defeat")
     if round_over:
         return
     round_over = true
@@ -201,6 +250,7 @@ func _process(delta: float) -> void:
     x_left = clampf(x_left, 50, 1230)
     if jump_pressed and y_left >= 610:
         velocity_y = -740
+        play_sound("jump")
     velocity_y += 1700 * delta
     y_left = minf(610, y_left + velocity_y * delta)
     if y_left >= 610:
@@ -208,9 +258,11 @@ func _process(delta: float) -> void:
     if hit_pressed and attack_cooldown <= 0:
         attack_cooldown = 0.55
         player_attack_fx = 0.18
+        play_sound("swing")
         if absf(x_left - x_right) < 145.0 and absf(y_left - 610.0) < 115.0:
             hp_right = maxi(0, hp_right - 10)
             enemy_hit_fx = 0.22
+            play_sound("hit")
             if hp_right == 0:
                 finish_round(true)
     if hp_left > 0 and hp_right > 0:
@@ -233,7 +285,9 @@ func _process(delta: float) -> void:
         if absf(x_left - x_right) < 140 and absf(y_left - 610.0) < 120.0 and enemy_cooldown <= 0:
             enemy_cooldown = 0.95
             enemy_attack_fx = 0.18
+            play_sound("swing")
             player_hit_fx = 0.22
+            play_sound("hit")
             hp_left = maxi(0, hp_left - 7)
             if hp_left == 0:
                 finish_round(false)
