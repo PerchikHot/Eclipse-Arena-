@@ -4,6 +4,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -32,10 +35,23 @@ jobs:
           test -n "$SDKMANAGER" || { echo "Android sdkmanager not found"; exit 1; }
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
-      - name: Create debug signing key
+      - name: Restore permanent development signing key
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          keytool -genkeypair -noprompt -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -keystore "$RUNNER_TEMP/debug.keystore" -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/debug.keystore" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP"
+          if [ -f .github/eclipsearena-debug.keystore.b64 ]; then
+            base64 --decode .github/eclipsearena-debug.keystore.b64 > "$RUNNER_TEMP/eclipsearena-debug.keystore"
+          else
+            keytool -genkeypair -noprompt -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -keystore "$RUNNER_TEMP/eclipsearena-debug.keystore" -storepass android -keypass android -dname "CN=Eclipse Arena Development,O=Eclipse Arena,C=US"
+            base64 -w0 "$RUNNER_TEMP/eclipsearena-debug.keystore" > .github/eclipsearena-debug.keystore.b64
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .github/eclipsearena-debug.keystore.b64
+            git commit -m "Persist prototype debug signing key for APK upgrades"
+            git push origin HEAD:main
+          fi
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/eclipsearena-debug.keystore" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
       - name: Import project
