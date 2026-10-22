@@ -495,12 +495,14 @@ func draw_sprite_fighter(origin: Vector2, fighter_id: int, face_right: bool, mot
         return
     var bob := sin(animation_clock * 12.0) * 3.0 if absf(motion) > 0.1 else sin(animation_clock * 2.0) * 1.7
     var direction := 1.0 if face_right else -1.0
-    var body_height := 216.0
-    var body_width := 134.0
+    var body_height := 235.0
+    var body_width := 145.0
     var lean := attack_fx * 95.0 * direction - hit_fx * 80.0 * direction
+    var squash := 1.0 + 0.035 * sin(animation_clock * 9.0) if absf(motion) > 0.1 else 1.0
+    body_height *= squash
     var destination := Rect2(origin.x - body_width * 0.5 + lean, origin.y - body_height - bob, body_width, body_height)
     var costume_tint := Color.WHITE
-    if fighter_id == selected_fighter:
+    if fighter_id == selected_fighter and origin.x == x_left:
         if selected_costume == 1:
             costume_tint = Color("#d5ddff")
         elif selected_costume == 2:
