@@ -60,6 +60,8 @@ var combo_timer := 0.0
 var block_timer := 0.0
 var skill_energy := 0.0
 var skill_cost := 40.0
+var enemy_energy := 0.0
+var enemy_skill_fx := 0.0
 var skill_label: Label
 var round_seconds := 99.0
 var round_timer_label: Label
@@ -377,6 +379,8 @@ func restart_round() -> void:
     combo_timer = 0.0
     block_timer = 0.0
     skill_energy = 0.0
+    enemy_energy = 0.0
+    enemy_skill_fx = 0.0
     round_seconds = 99.0
     round_timer_label.text = "99"
     round_number_label.text = "РАУНД %d" % (player_wins + enemy_wins + 1)
@@ -443,6 +447,7 @@ func _process(delta: float) -> void:
     enemy_motion = 0.0
     player_attack_fx = maxf(0.0, player_attack_fx - delta)
     enemy_attack_fx = maxf(0.0, enemy_attack_fx - delta)
+    enemy_skill_fx = maxf(0.0, enemy_skill_fx - delta)
     player_hit_fx = maxf(0.0, player_hit_fx - delta)
     enemy_hit_fx = maxf(0.0, enemy_hit_fx - delta)
     ai_timer -= delta
@@ -479,6 +484,7 @@ func _process(delta: float) -> void:
             combo_timer = 1.3
             hp_right = maxi(0, hp_right - (18 if can_skill else 8 + mini(combo_hits, 4)))
             enemy_hit_fx = 0.22
+            enemy_energy = minf(100.0, enemy_energy + 5.0)
             impact_flash = 0.15
             play_sound("hit")
             if hp_right == 0:
@@ -501,13 +507,18 @@ func _process(delta: float) -> void:
             x_left = clampf(midpoint - separation * 42.0, 50.0, 1230.0)
             x_right = clampf(midpoint + separation * 42.0, 50.0, 1230.0)
         if absf(x_left - x_right) < 140 and absf(y_left - 610.0) < 120.0 and enemy_cooldown <= 0:
-            enemy_cooldown = 0.95
-            enemy_attack_fx = 0.18
+            var enemy_special: bool = enemy_energy >= skill_cost and randf() < 0.55
+            if enemy_special:
+                enemy_energy -= skill_cost
+                enemy_skill_fx = 0.35
+            enemy_cooldown = 1.3 if enemy_special else 0.95
+            enemy_attack_fx = 0.3 if enemy_special else 0.18
             play_sound("swing")
             player_hit_fx = 0.22
             impact_flash = 0.15
             play_sound("hit")
-            hp_left = maxi(0, hp_left - (2 if block_timer > 0.0 else 7))
+            hp_left = maxi(0, hp_left - ((4 if enemy_special else 2) if block_timer > 0.0 else (15 if enemy_special else 7)))
+            enemy_energy = minf(100.0, enemy_energy + (0.0 if enemy_special else 9.0))
             skill_energy = minf(100.0, skill_energy + 4.0)
             if hp_left == 0:
                 finish_round(false)
@@ -529,6 +540,8 @@ func _draw() -> void:
         draw_circle(joystick_center + Vector2(joystick_axis * 43.0, 0), 32.0, Color("#9788c2", 0.9))
     draw_sprite_fighter(Vector2(x_left, y_left), selected_fighter, x_right >= x_left, player_motion, player_attack_fx, player_hit_fx, hp_left)
     draw_sprite_fighter(Vector2(x_right, 610), enemy_fighter, x_left >= x_right, enemy_motion, enemy_attack_fx, enemy_hit_fx, hp_right)
+    if enemy_skill_fx > 0.0:
+        draw_arc(Vector2(x_right, 480), 115.0 + 25.0 * enemy_skill_fx, 0.0, TAU, 56, Color("#ff9f75", enemy_skill_fx * 2.0), 8.0)
     if enemy_hit_fx > 0.0:
         draw_circle(Vector2(x_right, 470), 12.0 + enemy_hit_fx * 55.0, Color("#ffd56c", enemy_hit_fx * 3.0))
     if player_hit_fx > 0.0:
@@ -544,7 +557,7 @@ func _draw() -> void:
     draw_rect(Rect2(35, 78, 460, 14), Color("#29253f"))
     draw_rect(Rect2(785, 78, 460, 14), Color("#29253f"))
     draw_rect(Rect2(40, 81, skill_energy * 4.5, 8), Color("#b49aff"))
-    draw_rect(Rect2(790, 81, 450, 8), Color("#62536c"))
+    draw_rect(Rect2(1240 - enemy_energy * 4.5, 81, enemy_energy * 4.5, 8), Color("#ffb184"))
     draw_line(Vector2(35, 100), Vector2(495, 100), Color("#8173b0"), 2)
     draw_line(Vector2(785, 100), Vector2(1245, 100), Color("#8173b0"), 2)
     draw_rect(Rect2(525, 5, 230, 115), Color("#211b39", 0.92))
