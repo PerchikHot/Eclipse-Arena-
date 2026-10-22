@@ -63,6 +63,7 @@ var skill_cost := 40.0
 var skill_label: Label
 var round_seconds := 99.0
 var round_timer_label: Label
+var round_number_label: Label
 
 func _ready() -> void:
     for character in ["yamato", "erza", "alpha", "rias"]:
@@ -103,22 +104,28 @@ func _ready() -> void:
         button.button_down.connect(func(): held[label] = true)
         button.button_up.connect(func(): held[label] = false)
     player_name_label = Label.new()
-    player_name_label.position = Vector2(50, 5)
+    player_name_label.position = Vector2(55, 10)
     player_name_label.add_theme_font_size_override("font_size", 20)
     add_child(player_name_label)
     enemy_name_label = Label.new()
-    enemy_name_label.position = Vector2(830, 5)
+    enemy_name_label.position = Vector2(850, 10)
     enemy_name_label.add_theme_font_size_override("font_size", 20)
     add_child(enemy_name_label)
     round_timer_label = Label.new()
-    round_timer_label.position = Vector2(600, 80)
+    round_timer_label.position = Vector2(590, 42)
     round_timer_label.size = Vector2(100, 48)
     round_timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    round_timer_label.add_theme_font_size_override("font_size", 35)
+    round_timer_label.add_theme_font_size_override("font_size", 40)
     add_child(round_timer_label)
+    round_number_label = Label.new()
+    round_number_label.position = Vector2(540, 5)
+    round_number_label.size = Vector2(200, 30)
+    round_number_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    round_number_label.add_theme_font_size_override("font_size", 22)
+    add_child(round_number_label)
     score_label = Label.new()
-    score_label.position = Vector2(495, 20)
-    score_label.add_theme_font_size_override("font_size", 22)
+    score_label.position = Vector2(545, 97)
+    score_label.add_theme_font_size_override("font_size", 16)
     score_label.text = "ИГРОК 0 : 0 ПРОТИВНИК"
     add_child(score_label)
     result_label = Label.new()
@@ -144,7 +151,7 @@ func _ready() -> void:
     add_child(cooldown_label)
     pause_button = Button.new()
     pause_button.text = "МЕНЮ"
-    pause_button.position = Vector2(1100, 10)
+    pause_button.position = Vector2(1100, 132)
     pause_button.size = Vector2(155, 52)
     pause_button.pressed.connect(show_menu)
     add_child(pause_button)
@@ -333,6 +340,10 @@ func show_menu() -> void:
     cooldown_label.visible = false
     skill_label.visible = false
     round_timer_label.visible = false
+    round_number_label.visible = false
+    score_label.visible = false
+    player_name_label.visible = false
+    enemy_name_label.visible = false
     restart_button.visible = false
 
 func start_game() -> void:
@@ -345,6 +356,10 @@ func start_game() -> void:
     cooldown_label.visible = true
     skill_label.visible = true
     round_timer_label.visible = true
+    round_number_label.visible = true
+    score_label.visible = true
+    player_name_label.visible = true
+    enemy_name_label.visible = true
     restart_button.visible = round_over
     player_name_label.text = fighter_names[selected_fighter]
     enemy_name_label.text = fighter_names[enemy_fighter]
@@ -364,6 +379,7 @@ func restart_round() -> void:
     skill_energy = 0.0
     round_seconds = 99.0
     round_timer_label.text = "99"
+    round_number_label.text = "РАУНД %d" % (player_wins + enemy_wins + 1)
     round_over = false
     player_attack_fx = 0.0
     enemy_attack_fx = 0.0
@@ -519,12 +535,20 @@ func _draw() -> void:
         draw_circle(Vector2(x_left, y_left - 140.0), 12.0 + player_hit_fx * 55.0, Color("#ffd56c", player_hit_fx * 3.0))
     if impact_flash > 0.0:
         draw_rect(Rect2(0, 0, 1280, 610), Color(1.0, 0.9, 0.96, impact_flash))
-    draw_rect(Rect2(50, 35, 400, 26), Color("#393349"))
-    draw_rect(Rect2(830, 35, 400, 26), Color("#393349"))
-    draw_rect(Rect2(50, 35, hp_left * 4, 26), Color("#80d6ae"))
-    draw_rect(Rect2(830, 35, hp_right * 4, 26), Color("#df738f"))
-    draw_rect(Rect2(50, 68, 200, 10), Color("#393349"))
-    draw_rect(Rect2(50, 68, skill_energy * 2.0, 10), Color("#9f8df1"))
+    # Верхняя панель: здоровье, энергия, таймер и текущий раунд.
+    draw_rect(Rect2(0, 0, 1280, 125), Color("#0c0c20", 0.89))
+    draw_rect(Rect2(35, 39, 460, 30), Color("#353248"))
+    draw_rect(Rect2(785, 39, 460, 30), Color("#353248"))
+    draw_rect(Rect2(40, 44, float(hp_left) * 4.5, 20), Color("#64e5ae"))
+    draw_rect(Rect2(1240 - float(hp_right) * 4.5, 44, float(hp_right) * 4.5, 20), Color("#f27d98"))
+    draw_rect(Rect2(35, 78, 460, 14), Color("#29253f"))
+    draw_rect(Rect2(785, 78, 460, 14), Color("#29253f"))
+    draw_rect(Rect2(40, 81, skill_energy * 4.5, 8), Color("#b49aff"))
+    draw_rect(Rect2(790, 81, 450, 8), Color("#62536c"))
+    draw_line(Vector2(35, 100), Vector2(495, 100), Color("#8173b0"), 2)
+    draw_line(Vector2(785, 100), Vector2(1245, 100), Color("#8173b0"), 2)
+    draw_rect(Rect2(525, 5, 230, 115), Color("#211b39", 0.92))
+    draw_arc(Vector2(640, 62), 49, 0.0, TAU, 48, Color("#b49aff"), 3)
 
 func draw_sprite_fighter(origin: Vector2, fighter_id: int, face_right: bool, motion: float, attack_fx: float, hit_fx: float, health: int) -> void:
     if fighter_id >= fighter_textures.size() or fighter_textures[fighter_id] == null:
