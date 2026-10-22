@@ -58,6 +58,9 @@ var joystick_touch := -1
 var combo_hits := 0
 var combo_timer := 0.0
 var block_timer := 0.0
+var skill_energy := 0.0
+var skill_cost := 40.0
+var skill_label: Label
 
 func _ready() -> void:
     for character in ["yamato", "erza", "alpha", "rias"]:
@@ -122,6 +125,11 @@ func _ready() -> void:
     restart_button.visible = false
     restart_button.pressed.connect(restart_round)
     add_child(restart_button)
+    skill_label = Label.new()
+    skill_label.position = Vector2(650, 615)
+    skill_label.size = Vector2(240, 30)
+    skill_label.add_theme_font_size_override("font_size", 20)
+    add_child(skill_label)
     cooldown_label = Label.new()
     cooldown_label.position = Vector2(640, 650)
     cooldown_label.add_theme_font_size_override("font_size", 17)
@@ -315,6 +323,7 @@ func show_menu() -> void:
         controls[key].visible = false
     pause_button.visible = false
     cooldown_label.visible = false
+    skill_label.visible = false
     restart_button.visible = false
 
 func start_game() -> void:
@@ -325,6 +334,7 @@ func start_game() -> void:
         controls[key].visible = true
     pause_button.visible = true
     cooldown_label.visible = true
+    skill_label.visible = true
     restart_button.visible = round_over
     player_name_label.text = fighter_names[selected_fighter]
     enemy_name_label.text = fighter_names[enemy_fighter]
@@ -341,6 +351,7 @@ func restart_round() -> void:
     combo_hits = 0
     combo_timer = 0.0
     block_timer = 0.0
+    skill_energy = 0.0
     round_over = false
     player_attack_fx = 0.0
     enemy_attack_fx = 0.0
@@ -422,14 +433,18 @@ func _process(delta: float) -> void:
     if y_left >= 610:
         velocity_y = 0
     var skill_pressed: bool = held["SKILL"] or Input.is_key_pressed(KEY_L)
-    if (hit_pressed or skill_pressed) and attack_cooldown <= 0 and block_timer <= 0.0:
-        attack_cooldown = 0.8 if skill_pressed else 0.43
+    var can_skill: bool = skill_pressed and skill_energy >= skill_cost
+    if (hit_pressed or can_skill) and attack_cooldown <= 0 and block_timer <= 0.0:
+        if can_skill:
+            skill_energy -= skill_cost
+        attack_cooldown = 0.8 if can_skill else 0.43
         player_attack_fx = 0.18
         play_sound("swing")
-        if absf(x_left - x_right) < (195.0 if skill_pressed else 155.0) and absf(y_left - 610.0) < 115.0:
+        if absf(x_left - x_right) < (195.0 if can_skill else 155.0) and absf(y_left - 610.0) < 115.0:
             combo_hits += 1
+            skill_energy = minf(100.0, skill_energy + (0.0 if can_skill else 11.0))
             combo_timer = 1.3
-            hp_right = maxi(0, hp_right - (18 if skill_pressed else 8 + mini(combo_hits, 4)))
+            hp_right = maxi(0, hp_right - (18 if can_skill else 8 + mini(combo_hits, 4)))
             enemy_hit_fx = 0.22
             impact_flash = 0.15
             play_sound("hit")
@@ -460,8 +475,10 @@ func _process(delta: float) -> void:
             impact_flash = 0.15
             play_sound("hit")
             hp_left = maxi(0, hp_left - (2 if block_timer > 0.0 else 7))
+            skill_energy = minf(100.0, skill_energy + 4.0)
             if hp_left == 0:
                 finish_round(false)
+    skill_label.text = "ЭНЕРГИЯ %d/100" % int(skill_energy)
     cooldown_label.text = ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
     queue_redraw()
 
