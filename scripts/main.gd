@@ -61,6 +61,8 @@ var block_timer := 0.0
 var skill_energy := 0.0
 var skill_cost := 40.0
 var skill_label: Label
+var round_seconds := 99.0
+var round_timer_label: Label
 
 func _ready() -> void:
     for character in ["yamato", "erza", "alpha", "rias"]:
@@ -108,6 +110,12 @@ func _ready() -> void:
     enemy_name_label.position = Vector2(830, 5)
     enemy_name_label.add_theme_font_size_override("font_size", 20)
     add_child(enemy_name_label)
+    round_timer_label = Label.new()
+    round_timer_label.position = Vector2(600, 80)
+    round_timer_label.size = Vector2(100, 48)
+    round_timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    round_timer_label.add_theme_font_size_override("font_size", 35)
+    add_child(round_timer_label)
     score_label = Label.new()
     score_label.position = Vector2(495, 20)
     score_label.add_theme_font_size_override("font_size", 22)
@@ -324,6 +332,7 @@ func show_menu() -> void:
     pause_button.visible = false
     cooldown_label.visible = false
     skill_label.visible = false
+    round_timer_label.visible = false
     restart_button.visible = false
 
 func start_game() -> void:
@@ -335,6 +344,7 @@ func start_game() -> void:
     pause_button.visible = true
     cooldown_label.visible = true
     skill_label.visible = true
+    round_timer_label.visible = true
     restart_button.visible = round_over
     player_name_label.text = fighter_names[selected_fighter]
     enemy_name_label.text = fighter_names[enemy_fighter]
@@ -352,6 +362,8 @@ func restart_round() -> void:
     combo_timer = 0.0
     block_timer = 0.0
     skill_energy = 0.0
+    round_seconds = 99.0
+    round_timer_label.text = "99"
     round_over = false
     player_attack_fx = 0.0
     enemy_attack_fx = 0.0
@@ -401,6 +413,11 @@ func _process(delta: float) -> void:
     if round_over or in_menu:
         return
     animation_clock += delta
+    round_seconds = maxf(0.0, round_seconds - delta)
+    round_timer_label.text = str(ceili(round_seconds))
+    if round_seconds <= 0.0:
+        finish_round(hp_left >= hp_right)
+        return
     impact_flash = maxf(0.0, impact_flash - delta)
     combo_timer = maxf(0.0, combo_timer - delta)
     block_timer = maxf(0.0, block_timer - delta)
@@ -506,6 +523,8 @@ func _draw() -> void:
     draw_rect(Rect2(830, 35, 400, 26), Color("#393349"))
     draw_rect(Rect2(50, 35, hp_left * 4, 26), Color("#80d6ae"))
     draw_rect(Rect2(830, 35, hp_right * 4, 26), Color("#df738f"))
+    draw_rect(Rect2(50, 68, 200, 10), Color("#393349"))
+    draw_rect(Rect2(50, 68, skill_energy * 2.0, 10), Color("#9f8df1"))
 
 func draw_sprite_fighter(origin: Vector2, fighter_id: int, face_right: bool, motion: float, attack_fx: float, hit_fx: float, health: int) -> void:
     if fighter_id >= fighter_textures.size() or fighter_textures[fighter_id] == null:
