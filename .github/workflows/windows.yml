@@ -1,0 +1,34 @@
+name: Eclipse Arena Windows EXE
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.3 and export templates
+        run: |
+          set -euo pipefail
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          sudo mv Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          unzip -q Godot_v4.3-stable_export_templates.tpz
+          cp templates/* "$HOME/.local/share/godot/export_templates/4.3.stable/"
+      - name: Import project and export Windows EXE
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --quit
+          mkdir -p build
+          godot --headless --path . --export-release "Windows Desktop" build/EclipseArena.exe
+          test -s build/EclipseArena.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EclipseArena-Windows-EXE
+          path: build/EclipseArena.exe
+          if-no-files-found: error
