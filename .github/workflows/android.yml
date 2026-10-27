@@ -81,3 +81,7 @@ jobs:
               --notes "Отладочная APK-сборка для установки через All Hub. Подписана существующим debug-ключом." --latest=false
           gh release upload eclipse-arena-android build/EclipseArena-debug.apk \
             --repo "$GITHUB_REPOSITORY" --clobber
+          VERSION="$(sed -n 's/^version\/name="\([^"]*\)"/\1/p' export_presets.cfg | head -n 1)"
+          test -n "$VERSION"
+          gh release edit eclipse-arena-android --repo "$GITHUB_REPOSITORY" \
+            --notes "$(printf '%s\nVersion: %s\n' 'Отладочная APK-сборка Eclipse Arena. Подписана существующим debug-ключом.' "$VERSION")"
