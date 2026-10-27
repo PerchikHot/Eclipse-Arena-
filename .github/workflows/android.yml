@@ -70,3 +70,14 @@ jobs:
           name: EclipseArena-Android-debug
           path: build/EclipseArena-debug.apk
           if-no-files-found: error
+      - name: Publish APK for direct All Hub installation
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view eclipse-arena-android --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create eclipse-arena-android --repo "$GITHUB_REPOSITORY" \
+              --title "Eclipse Arena — Android testing" \
+              --notes "Отладочная APK-сборка для установки через All Hub. Подписана существующим debug-ключом." --latest=false
+          gh release upload eclipse-arena-android build/EclipseArena-debug.apk \
+            --repo "$GITHUB_REPOSITORY" --clobber
