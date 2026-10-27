@@ -198,7 +198,7 @@ func _ready() -> void:
     )
     menu_layer.add_child(reset_button)
     var version_label := Label.new()
-    version_label.text = "ECLIPSE ARENA  •  v0.6.1"
+    version_label.text = "ECLIPSE ARENA  •  v0.6.2"
     version_label.position = Vector2(65, 650)
     version_label.add_theme_font_size_override("font_size", 18)
     menu_layer.add_child(version_label)
@@ -373,6 +373,11 @@ func start_game() -> void:
     enemy_name_label.text = fighter_names[enemy_fighter]
 
 func restart_round() -> void:
+    # A new round must never inherit held attacks or a captured joystick touch.
+    joystick_touch = -1
+    joystick_axis = 0.0
+    for key in held.keys():
+        held[key] = false
     hp_left = 100
     hp_right = 100
     x_left = 300.0
