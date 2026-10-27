@@ -43,3 +43,7 @@ jobs:
               --notes "Автоматическая Windows-сборка для All Hub." --latest=false
           gh release upload eclipse-arena-windows build/EclipseArena.exe \
             --repo "$GITHUB_REPOSITORY" --clobber
+          VERSION="$(sed -n 's/^version\/name="\([^"]*\)"/\1/p' export_presets.cfg | head -n 1)"
+          test -n "$VERSION"
+          gh release edit eclipse-arena-windows --repo "$GITHUB_REPOSITORY" \
+            --notes "$(printf '%s\nVersion: %s\n' 'Windows-сборка Eclipse Arena для All Hub.' "$VERSION")"
