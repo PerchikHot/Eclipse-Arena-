@@ -198,7 +198,7 @@ func _ready() -> void:
     )
     menu_layer.add_child(reset_button)
     var version_label := Label.new()
-    version_label.text = "ANDROID PROTOTYPE  •  v0.6"
+    version_label.text = "ECLIPSE ARENA  •  v0.6.1"
     version_label.position = Vector2(65, 650)
     version_label.add_theme_font_size_override("font_size", 18)
     menu_layer.add_child(version_label)
@@ -334,6 +334,12 @@ func play_sound(sound_name: String) -> void:
 func show_menu() -> void:
     play_sound("menu")
     in_menu = true
+    # Release touch and button states when leaving combat so returning to
+    # the arena cannot trigger a stuck attack, block, or movement.
+    joystick_touch = -1
+    joystick_axis = 0.0
+    for key in held.keys():
+        held[key] = false
     menu_layer.visible = true
     selection_layer.visible = false
     for key in controls.keys():
