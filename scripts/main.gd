@@ -153,7 +153,7 @@ func _ready() -> void:
     cooldown_label.add_theme_font_size_override("font_size", 17)
     add_child(cooldown_label)
     pause_button = Button.new()
-    pause_button.text = "МЕНЮ"
+    pause_button.text = "МЕНЮ" if OS.has_feature("mobile") else "МЕНЮ (ESC)"
     pause_button.position = Vector2(1100, 132)
     pause_button.size = Vector2(155, 52)
     pause_button.pressed.connect(show_menu)
@@ -452,7 +452,12 @@ func _notification(what: int) -> void:
             held[key] = false
 
 func _unhandled_key_input(event: InputEvent) -> void:
-    if not in_menu and round_over and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R:
+    if in_menu or not (event is InputEventKey) or not event.pressed or event.echo:
+        return
+    if event.keycode == KEY_ESCAPE:
+        show_menu()
+        get_viewport().set_input_as_handled()
+    elif round_over and event.keycode == KEY_R:
         restart_round()
         get_viewport().set_input_as_handled()
 
