@@ -379,10 +379,10 @@ func sync_pause_overlay() -> void:
     if in_menu or round_over:
         pause_overlay.visible = false
     elif manual_paused:
-        pause_overlay.text = "ПАУЗА\\nНАЖМИ ПРОДОЛЖИТЬ" if OS.has_feature("mobile") else "ПАУЗА\\nP — ПРОДОЛЖИТЬ"
+        pause_overlay.text = "ПАУЗА\nНАЖМИ ПРОДОЛЖИТЬ" if OS.has_feature("mobile") else "ПАУЗА\nP — ПРОДОЛЖИТЬ"
         pause_overlay.visible = true
     elif not has_game_focus:
-        pause_overlay.text = "ПАУЗА\\nВЕРНИСЬ В ИГРУ"
+        pause_overlay.text = "ПАУЗА\nВЕРНИСЬ В ИГРУ"
         pause_overlay.visible = true
     else:
         pause_overlay.visible = false
