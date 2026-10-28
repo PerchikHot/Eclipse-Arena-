@@ -354,6 +354,7 @@ func show_menu() -> void:
     player_name_label.visible = false
     enemy_name_label.visible = false
     restart_button.visible = false
+    result_label.visible = false
 
 func start_game() -> void:
     play_sound("menu")
@@ -370,6 +371,7 @@ func start_game() -> void:
     player_name_label.visible = true
     enemy_name_label.visible = true
     restart_button.visible = round_over
+    result_label.visible = round_over
     player_name_label.text = fighter_names[selected_fighter]
     enemy_name_label.text = fighter_names[enemy_fighter]
 
