@@ -32,6 +32,8 @@ var cooldown_label: Label
 var in_menu := true
 var menu_layer: Control
 var pause_button: Button
+var pause_toggle_button: Button
+var manual_paused := false
 var audio_players: Array[AudioStreamPlayer] = []
 var sound_library: Dictionary = {}
 var sound_slot := 0
@@ -160,6 +162,12 @@ func _ready() -> void:
     pause_button.size = Vector2(155, 52)
     pause_button.pressed.connect(show_menu)
     add_child(pause_button)
+    pause_toggle_button = Button.new()
+    pause_toggle_button.text = "ПАУЗА" if OS.has_feature("mobile") else "ПАУЗА (P)"
+    pause_toggle_button.position = Vector2(910, 132)
+    pause_toggle_button.size = Vector2(180, 52)
+    pause_toggle_button.pressed.connect(toggle_pause)
+    add_child(pause_toggle_button)
     menu_layer = Control.new()
     menu_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     add_child(menu_layer)
@@ -351,8 +359,21 @@ func play_sound(sound_name: String) -> void:
     player.stream = sound_library[sound_name]
     player.play()
 
+func toggle_pause() -> void:
+    if in_menu or round_over:
+        return
+    manual_paused = not manual_paused
+    pause_toggle_button.text = ("ПРОДОЛЖИТЬ" if OS.has_feature("mobile") else "ПРОДОЛЖИТЬ (P)") if manual_paused else ("ПАУЗА" if OS.has_feature("mobile") else "ПАУЗА (P)")
+    if manual_paused:
+        joystick_touch = -1
+        joystick_axis = 0.0
+        for key in held.keys():
+            held[key] = false
+
 func show_menu() -> void:
     play_sound("menu")
+    manual_paused = false
+    pause_toggle_button.text = "ПАУЗА" if OS.has_feature("mobile") else "ПАУЗА (P)"
     in_menu = true
     # Release touch and button states when leaving combat so returning to
     # the arena cannot trigger a stuck attack, block, or movement.
@@ -365,6 +386,7 @@ func show_menu() -> void:
     for key in controls.keys():
         controls[key].visible = false
     pause_button.visible = false
+    pause_toggle_button.visible = false
     cooldown_label.visible = false
     skill_label.visible = false
     round_timer_label.visible = false
@@ -382,6 +404,7 @@ func start_game() -> void:
     for key in controls.keys():
         controls[key].visible = true
     pause_button.visible = true
+    pause_toggle_button.visible = true
     cooldown_label.visible = true
     skill_label.visible = true
     round_timer_label.visible = true
@@ -395,6 +418,8 @@ func start_game() -> void:
     enemy_name_label.text = fighter_names[enemy_fighter]
 
 func restart_round() -> void:
+    manual_paused = false
+    pause_toggle_button.text = "ПАУЗА" if OS.has_feature("mobile") else "ПАУЗА (P)"
     # A new round must never inherit held attacks or a captured joystick touch.
     joystick_touch = -1
     joystick_axis = 0.0
@@ -480,6 +505,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
         return
     if in_menu:
         return
+    if event.keycode == KEY_P:
+        toggle_pause()
+        get_viewport().set_input_as_handled()
+        return
     if event.keycode == KEY_ESCAPE:
         show_menu()
         get_viewport().set_input_as_handled()
@@ -505,7 +534,7 @@ func _input(event: InputEvent) -> void:
                 return
         get_viewport().set_input_as_handled()
         return
-    if in_menu:
+    if in_menu or manual_paused:
         return
     if event is InputEventScreenTouch:
         if event.pressed and event.position.distance_to(joystick_center) < 105.0 and joystick_touch == -1:
@@ -520,7 +549,7 @@ func _input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
     # Do not let the round timer or opponent advance during Alt-Tab or
     # Android notification interruptions.
-    if round_over or in_menu or not has_game_focus:
+    if round_over or in_menu or manual_paused or not has_game_focus:
         return
     animation_clock += delta
     round_seconds = maxf(0.0, round_seconds - delta)
