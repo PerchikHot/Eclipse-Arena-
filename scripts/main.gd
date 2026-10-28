@@ -186,7 +186,7 @@ func _ready() -> void:
     menu_layer.add_child(subtitle)
     if not OS.has_feature("mobile"):
         var keyboard_hint := Label.new()
-        keyboard_hint.text = "A/D — движение  •  W/ПРОБЕЛ — прыжок\\nJ — удар  •  K — блок  •  L — спец  •  ESC — меню"
+        keyboard_hint.text = "A/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец  •  ESC — меню"
         keyboard_hint.position = Vector2(55, 285)
         keyboard_hint.size = Vector2(460, 44)
         keyboard_hint.add_theme_font_size_override("font_size", 14)
