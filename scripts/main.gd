@@ -65,6 +65,7 @@ var enemy_energy := 0.0
 var enemy_skill_fx := 0.0
 var skill_label: Label
 var round_seconds := 99.0
+var timer_warning_active := false
 var has_game_focus := true
 var round_timer_label: Label
 var round_number_label: Label
@@ -415,6 +416,8 @@ func restart_round() -> void:
     enemy_skill_fx = 0.0
     round_seconds = 99.0
     round_timer_label.text = "99"
+    timer_warning_active = false
+    round_timer_label.add_theme_color_override("font_color", Color.WHITE)
     round_number_label.text = "РАУНД %d" % (player_wins + enemy_wins + draws + 1)
     round_over = false
     player_attack_fx = 0.0
@@ -522,6 +525,10 @@ func _process(delta: float) -> void:
     animation_clock += delta
     round_seconds = maxf(0.0, round_seconds - delta)
     round_timer_label.text = str(ceili(round_seconds))
+    # Make the last ten seconds unmistakable without changing the timer rules.
+    if round_seconds <= 10.0 and not timer_warning_active:
+        timer_warning_active = true
+        round_timer_label.add_theme_color_override("font_color", Color("#ff8b9e"))
     if round_seconds <= 0.0:
         var outcome := 0
         if hp_left > hp_right:
