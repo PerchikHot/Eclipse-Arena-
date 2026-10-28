@@ -686,6 +686,7 @@ func _process(delta: float) -> void:
             skill_energy = minf(100.0, skill_energy + 4.0)
             if hp_left == 0:
                 finish_round(-1)
+                return
     skill_label.text = "ЭНЕРГИЯ %d/100" % int(skill_energy)
     cooldown_label.text = ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
     queue_redraw()
