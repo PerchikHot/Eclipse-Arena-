@@ -407,10 +407,10 @@ func restart_round() -> void:
     queue_redraw()
 
 func finish_round(player_won: bool) -> void:
-    play_sound("victory" if player_won else "defeat")
     if round_over:
         return
     round_over = true
+    play_sound("victory" if player_won else "defeat")
     if player_won:
         player_wins += 1
         result_label.text = "ПОБЕДА!"
