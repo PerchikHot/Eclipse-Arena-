@@ -15,6 +15,7 @@ var held := {}
 var round_over := false
 var player_wins := 0
 var enemy_wins := 0
+var draws := 0
 var score_label: Label
 var result_label: Label
 var restart_button: Button
@@ -198,7 +199,7 @@ func _ready() -> void:
     )
     menu_layer.add_child(reset_button)
     var version_label := Label.new()
-    version_label.text = "ECLIPSE ARENA  •  v%s" % str(ProjectSettings.get_setting("application/config/version", "0.6.4"))
+    version_label.text = "ECLIPSE ARENA  •  v%s" % str(ProjectSettings.get_setting("application/config/version", "0.6.5"))
     version_label.position = Vector2(65, 650)
     version_label.add_theme_font_size_override("font_size", 18)
     menu_layer.add_child(version_label)
@@ -394,7 +395,7 @@ func restart_round() -> void:
     enemy_skill_fx = 0.0
     round_seconds = 99.0
     round_timer_label.text = "99"
-    round_number_label.text = "РАУНД %d" % (player_wins + enemy_wins + 1)
+    round_number_label.text = "РАУНД %d" % (player_wins + enemy_wins + draws + 1)
     round_over = false
     player_attack_fx = 0.0
     enemy_attack_fx = 0.0
@@ -406,18 +407,24 @@ func restart_round() -> void:
     restart_button.visible = false
     queue_redraw()
 
-func finish_round(player_won: bool) -> void:
+# outcome: 1 = victory, -1 = defeat, 0 = draw (equal HP at timeout).
+func finish_round(outcome: int) -> void:
     if round_over:
         return
     round_over = true
-    play_sound("victory" if player_won else "defeat")
-    if player_won:
+    if outcome > 0:
+        play_sound("victory")
         player_wins += 1
         result_label.text = "ПОБЕДА!"
-    else:
+    elif outcome < 0:
+        play_sound("defeat")
         enemy_wins += 1
         result_label.text = "ПОРАЖЕНИЕ!"
-    score_label.text = "ИГРОК %d : %d ПРОТИВНИК" % [player_wins, enemy_wins]
+    else:
+        play_sound("menu")
+        draws += 1
+        result_label.text = "НИЧЬЯ!"
+    score_label.text = "ИГРОК %d : %d ПРОТИВНИК  •  НИЧЬИХ: %d" % [player_wins, enemy_wins, draws]
     result_label.visible = true
     restart_button.visible = true
 
@@ -457,7 +464,12 @@ func _process(delta: float) -> void:
     round_seconds = maxf(0.0, round_seconds - delta)
     round_timer_label.text = str(ceili(round_seconds))
     if round_seconds <= 0.0:
-        finish_round(hp_left >= hp_right)
+        var outcome := 0
+        if hp_left > hp_right:
+            outcome = 1
+        elif hp_left < hp_right:
+            outcome = -1
+        finish_round(outcome)
         return
     impact_flash = maxf(0.0, impact_flash - delta)
     combo_timer = maxf(0.0, combo_timer - delta)
@@ -509,7 +521,7 @@ func _process(delta: float) -> void:
             impact_flash = 0.15
             play_sound("hit")
             if hp_right == 0:
-                finish_round(true)
+                finish_round(1)
     if hp_left > 0 and hp_right > 0:
         var distance: float = absf(x_left - x_right)
         if ai_timer <= 0.0:
@@ -542,7 +554,7 @@ func _process(delta: float) -> void:
             enemy_energy = minf(100.0, enemy_energy + (0.0 if enemy_special else 9.0))
             skill_energy = minf(100.0, skill_energy + 4.0)
             if hp_left == 0:
-                finish_round(false)
+                finish_round(-1)
     skill_label.text = "ЭНЕРГИЯ %d/100" % int(skill_energy)
     cooldown_label.text = ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
     queue_redraw()
