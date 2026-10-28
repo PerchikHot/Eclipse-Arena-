@@ -547,7 +547,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
     if event.keycode == KEY_ESCAPE:
         show_menu()
         get_viewport().set_input_as_handled()
-    elif round_over and event.keycode == KEY_R:
+    elif round_over and event.keycode in [KEY_R, KEY_ENTER, KEY_KP_ENTER]:
         restart_round()
         get_viewport().set_input_as_handled()
 
