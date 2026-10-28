@@ -184,6 +184,13 @@ func _ready() -> void:
     subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     subtitle.add_theme_font_size_override("font_size", 23)
     menu_layer.add_child(subtitle)
+    if not OS.has_feature("mobile"):
+        var keyboard_hint := Label.new()
+        keyboard_hint.text = "A/D — движение  •  W/ПРОБЕЛ — прыжок\\nJ — удар  •  K — блок  •  L — спец  •  ESC — меню"
+        keyboard_hint.position = Vector2(55, 285)
+        keyboard_hint.size = Vector2(460, 44)
+        keyboard_hint.add_theme_font_size_override("font_size", 14)
+        menu_layer.add_child(keyboard_hint)
     var start_button := Button.new()
     start_button.text = "⚔  БЫСТРЫЙ БОЙ"
     start_button.position = Vector2(55, 335)
@@ -456,7 +463,14 @@ func _notification(what: int) -> void:
             held[key] = false
 
 func _unhandled_key_input(event: InputEvent) -> void:
-    if in_menu or not (event is InputEventKey) or not event.pressed or event.echo:
+    if not (event is InputEventKey) or not event.pressed or event.echo:
+        return
+    # The selection screen is a menu too, but Escape should go back.
+    if event.keycode == KEY_ESCAPE and selection_layer.visible:
+        show_menu()
+        get_viewport().set_input_as_handled()
+        return
+    if in_menu:
         return
     if event.keycode == KEY_ESCAPE:
         show_menu()
