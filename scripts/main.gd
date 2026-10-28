@@ -65,6 +65,7 @@ var enemy_energy := 0.0
 var enemy_skill_fx := 0.0
 var skill_label: Label
 var round_seconds := 99.0
+var has_game_focus := true
 var round_timer_label: Label
 var round_number_label: Label
 
@@ -445,7 +446,10 @@ func make_rig() -> Dictionary:
 # returning from Android notifications or desktop Alt-Tab can resume a
 # stuck movement, block or attack without a fresh press.
 func _notification(what: int) -> void:
+    if what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_WM_WINDOW_FOCUS_IN:
+        has_game_focus = true
     if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+        has_game_focus = false
         joystick_touch = -1
         joystick_axis = 0.0
         for key in held.keys():
@@ -475,7 +479,9 @@ func _input(event: InputEvent) -> void:
         joystick_axis = clampf((event.position.x - joystick_center.x) / 58.0, -1.0, 1.0)
 
 func _process(delta: float) -> void:
-    if round_over or in_menu:
+    # Do not let the round timer or opponent advance during Alt-Tab or
+    # Android notification interruptions.
+    if round_over or in_menu or not has_game_focus:
         return
     animation_clock += delta
     round_seconds = maxf(0.0, round_seconds - delta)
