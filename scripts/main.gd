@@ -198,7 +198,7 @@ func _ready() -> void:
     )
     menu_layer.add_child(reset_button)
     var version_label := Label.new()
-    version_label.text = "ECLIPSE ARENA  •  v0.6.3"
+    version_label.text = "ECLIPSE ARENA  •  v%s" % str(ProjectSettings.get_setting("application/config/version", "0.6.4"))
     version_label.position = Vector2(65, 650)
     version_label.add_theme_font_size_override("font_size", 18)
     menu_layer.add_child(version_label)
