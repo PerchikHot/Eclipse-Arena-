@@ -272,6 +272,11 @@ func _ready() -> void:
     selection_hint.position = Vector2(95, 150)
     selection_hint.add_theme_font_size_override("font_size", 22)
     selection_layer.add_child(selection_hint)
+    var selection_controls := Label.new()
+    selection_controls.text = "ПК: ←/→ ВЫБОР • C КОСТЮМ • ENTER В БОЙ • ESC НАЗАД"
+    selection_controls.position = Vector2(95, 188)
+    selection_controls.add_theme_font_size_override("font_size", 17)
+    selection_layer.add_child(selection_controls)
     var back_button := Button.new()
     back_button.text = "НАЗАД"
     back_button.position = Vector2(50, 620)
@@ -480,6 +485,23 @@ func _unhandled_key_input(event: InputEvent) -> void:
         get_viewport().set_input_as_handled()
 
 func _input(event: InputEvent) -> void:
+    # Capture selection shortcuts before UI buttons consume arrow/Enter keys.
+    if selection_layer.visible and event is InputEventKey and event.pressed and not event.echo:
+        match event.keycode:
+            KEY_LEFT:
+                preview_fighter((selection_choice + fighter_names.size() - 1) % fighter_names.size())
+            KEY_RIGHT:
+                preview_fighter((selection_choice + 1) % fighter_names.size())
+            KEY_C:
+                cycle_costume()
+            KEY_ENTER, KEY_KP_ENTER:
+                select_fighter(selection_choice)
+            KEY_ESCAPE:
+                show_menu()
+            _:
+                return
+        get_viewport().set_input_as_handled()
+        return
     if in_menu:
         return
     if event is InputEventScreenTouch:
