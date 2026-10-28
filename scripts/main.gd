@@ -652,6 +652,7 @@ func _process(delta: float) -> void:
             play_sound("hit")
             if hp_right == 0:
                 finish_round(1)
+                return
     if hp_left > 0 and hp_right > 0:
         var distance: float = absf(x_left - x_right)
         if ai_timer <= 0.0:
