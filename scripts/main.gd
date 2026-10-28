@@ -717,8 +717,11 @@ func _draw() -> void:
     draw_rect(Rect2(0, 0, 1280, 125), Color("#0c0c20", 0.89))
     draw_rect(Rect2(35, 39, 460, 30), Color("#353248"))
     draw_rect(Rect2(785, 39, 460, 30), Color("#353248"))
-    draw_rect(Rect2(40, 44, float(hp_left) * 4.5, 20), Color("#64e5ae"))
-    draw_rect(Rect2(1240 - float(hp_right) * 4.5, 44, float(hp_right) * 4.5, 20), Color("#f27d98"))
+    # Highlight critical HP for both fighters without changing damage rules.
+    var player_hp_color := Color("#ffb36c") if hp_left <= 25 else Color("#64e5ae")
+    var enemy_hp_color := Color("#ff556e") if hp_right <= 25 else Color("#f27d98")
+    draw_rect(Rect2(40, 44, float(hp_left) * 4.5, 20), player_hp_color)
+    draw_rect(Rect2(1240 - float(hp_right) * 4.5, 44, float(hp_right) * 4.5, 20), enemy_hp_color)
     draw_rect(Rect2(35, 78, 460, 14), Color("#29253f"))
     draw_rect(Rect2(785, 78, 460, 14), Color("#29253f"))
     draw_rect(Rect2(40, 81, skill_energy * 4.5, 8), Color("#b49aff"))
