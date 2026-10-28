@@ -33,6 +33,7 @@ var in_menu := true
 var menu_layer: Control
 var pause_button: Button
 var pause_toggle_button: Button
+var pause_overlay: Label
 var manual_paused := false
 var audio_players: Array[AudioStreamPlayer] = []
 var sound_library: Dictionary = {}
@@ -168,6 +169,17 @@ func _ready() -> void:
     pause_toggle_button.size = Vector2(180, 52)
     pause_toggle_button.pressed.connect(toggle_pause)
     add_child(pause_toggle_button)
+    pause_overlay = Label.new()
+    pause_overlay.text = "ПАУЗА\nP — ПРОДОЛЖИТЬ" if not OS.has_feature("mobile") else "ПАУЗА\nНАЖМИ ПРОДОЛЖИТЬ"
+    pause_overlay.position = Vector2(430, 250)
+    pause_overlay.size = Vector2(420, 150)
+    pause_overlay.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    pause_overlay.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+    pause_overlay.add_theme_font_size_override("font_size", 34)
+    pause_overlay.add_theme_color_override("font_color", Color("#b8d9ff"))
+    pause_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    pause_overlay.visible = false
+    add_child(pause_overlay)
     menu_layer = Control.new()
     menu_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     add_child(menu_layer)
@@ -363,6 +375,7 @@ func toggle_pause() -> void:
     if in_menu or round_over:
         return
     manual_paused = not manual_paused
+    pause_overlay.visible = manual_paused
     pause_toggle_button.text = ("ПРОДОЛЖИТЬ" if OS.has_feature("mobile") else "ПРОДОЛЖИТЬ (P)") if manual_paused else ("ПАУЗА" if OS.has_feature("mobile") else "ПАУЗА (P)")
     if manual_paused:
         joystick_touch = -1
@@ -373,6 +386,7 @@ func toggle_pause() -> void:
 func show_menu() -> void:
     play_sound("menu")
     manual_paused = false
+    pause_overlay.visible = false
     pause_toggle_button.text = "ПАУЗА" if OS.has_feature("mobile") else "ПАУЗА (P)"
     in_menu = true
     # Release touch and button states when leaving combat so returning to
@@ -419,6 +433,7 @@ func start_game() -> void:
 
 func restart_round() -> void:
     manual_paused = false
+    pause_overlay.visible = false
     pause_toggle_button.text = "ПАУЗА" if OS.has_feature("mobile") else "ПАУЗА (P)"
     # A new round must never inherit held attacks or a captured joystick touch.
     joystick_touch = -1
