@@ -371,11 +371,27 @@ func play_sound(sound_name: String) -> void:
     player.stream = sound_library[sound_name]
     player.play()
 
+# Display the reason for a stopped round, including desktop Alt-Tab
+# and Android notification interruptions. No gameplay resumes until focused.
+func sync_pause_overlay() -> void:
+    if pause_overlay == null:
+        return
+    if in_menu or round_over:
+        pause_overlay.visible = false
+    elif manual_paused:
+        pause_overlay.text = "ПАУЗА\\nНАЖМИ ПРОДОЛЖИТЬ" if OS.has_feature("mobile") else "ПАУЗА\\nP — ПРОДОЛЖИТЬ"
+        pause_overlay.visible = true
+    elif not has_game_focus:
+        pause_overlay.text = "ПАУЗА\\nВЕРНИСЬ В ИГРУ"
+        pause_overlay.visible = true
+    else:
+        pause_overlay.visible = false
+
 func toggle_pause() -> void:
     if in_menu or round_over:
         return
     manual_paused = not manual_paused
-    pause_overlay.visible = manual_paused
+    sync_pause_overlay()
     pause_toggle_button.text = ("ПРОДОЛЖИТЬ" if OS.has_feature("mobile") else "ПРОДОЛЖИТЬ (P)") if manual_paused else ("ПАУЗА" if OS.has_feature("mobile") else "ПАУЗА (P)")
     if manual_paused:
         joystick_touch = -1
@@ -389,6 +405,7 @@ func show_menu() -> void:
     pause_overlay.visible = false
     pause_toggle_button.text = "ПАУЗА" if OS.has_feature("mobile") else "ПАУЗА (P)"
     in_menu = true
+    sync_pause_overlay()
     # Release touch and button states when leaving combat so returning to
     # the arena cannot trigger a stuck attack, block, or movement.
     joystick_touch = -1
@@ -414,6 +431,7 @@ func show_menu() -> void:
 func start_game() -> void:
     play_sound("menu")
     in_menu = false
+    sync_pause_overlay()
     menu_layer.visible = false
     for key in controls.keys():
         controls[key].visible = true
@@ -460,6 +478,7 @@ func restart_round() -> void:
     round_timer_label.add_theme_color_override("font_color", Color.WHITE)
     round_number_label.text = "РАУНД %d" % (player_wins + enemy_wins + draws + 1)
     round_over = false
+    sync_pause_overlay()
     player_attack_fx = 0.0
     enemy_attack_fx = 0.0
     player_hit_fx = 0.0
@@ -509,6 +528,7 @@ func _notification(what: int) -> void:
         joystick_axis = 0.0
         for key in held.keys():
             held[key] = false
+    sync_pause_overlay()
 
 func _unhandled_key_input(event: InputEvent) -> void:
     if not (event is InputEventKey) or not event.pressed or event.echo:
