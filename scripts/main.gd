@@ -536,10 +536,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
     # Desktop-only fullscreen shortcut works in menus and during combat.
     if not OS.has_feature("mobile") and event.keycode == KEY_F11:
         var mode := DisplayServer.window_get_mode()
-        DisplayServer.window_set_mode(
-            DisplayServer.WINDOW_MODE_WINDOWED if mode == DisplayServer.WINDOW_MODE_FULLSCREEN
-            else DisplayServer.WINDOW_MODE_FULLSCREEN
-        )
+        var next_mode := DisplayServer.WINDOW_MODE_FULLSCREEN
+        if mode == DisplayServer.WINDOW_MODE_FULLSCREEN:
+            next_mode = DisplayServer.WINDOW_MODE_WINDOWED
+        DisplayServer.window_set_mode(next_mode)
         get_viewport().set_input_as_handled()
         return
     # The selection screen is a menu too, but Escape should go back.
