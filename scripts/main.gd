@@ -207,7 +207,7 @@ func _ready() -> void:
     menu_layer.add_child(subtitle)
     if not OS.has_feature("mobile"):
         var keyboard_hint := Label.new()
-        keyboard_hint.text = "A/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец  •  ESC — меню"
+        keyboard_hint.text = "A/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец  •  ESC — меню  •  F11 — экран"
         keyboard_hint.position = Vector2(55, 285)
         keyboard_hint.size = Vector2(460, 44)
         keyboard_hint.add_theme_font_size_override("font_size", 14)
@@ -532,6 +532,15 @@ func _notification(what: int) -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
     if not (event is InputEventKey) or not event.pressed or event.echo:
+        return
+    # Desktop-only fullscreen shortcut works in menus and during combat.
+    if not OS.has_feature("mobile") and event.keycode == KEY_F11:
+        var mode := DisplayServer.window_get_mode()
+        DisplayServer.window_set_mode(
+            DisplayServer.WINDOW_MODE_WINDOWED if mode == DisplayServer.WINDOW_MODE_FULLSCREEN
+            else DisplayServer.WINDOW_MODE_FULLSCREEN
+        )
+        get_viewport().set_input_as_handled()
         return
     # The selection screen is a menu too, but Escape should go back.
     if event.keycode == KEY_ESCAPE and selection_layer.visible:
