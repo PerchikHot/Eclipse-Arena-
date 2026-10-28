@@ -198,7 +198,7 @@ func _ready() -> void:
     )
     menu_layer.add_child(reset_button)
     var version_label := Label.new()
-    version_label.text = "ECLIPSE ARENA  •  v0.6.2"
+    version_label.text = "ECLIPSE ARENA  •  v0.6.3"
     version_label.position = Vector2(65, 650)
     version_label.add_theme_font_size_override("font_size", 18)
     menu_layer.add_child(version_label)
@@ -426,6 +426,16 @@ func make_rig() -> Dictionary:
     for name in ["head", "torso", "pelvis", "chest_left", "chest_right", "glute_left", "glute_right", "arm_left", "arm_right", "leg_left", "leg_right", "hair", "pelvic_attachment", "pelvic_secondary_left", "pelvic_secondary_right"]:
         anchors[name] = Vector2.ZERO
     return anchors
+
+# Releasing focus must also release held touch/attack inputs. Otherwise
+# returning from Android notifications or desktop Alt-Tab can resume a
+# stuck movement, block or attack without a fresh press.
+func _notification(what: int) -> void:
+    if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+        joystick_touch = -1
+        joystick_axis = 0.0
+        for key in held.keys():
+            held[key] = false
 
 func _input(event: InputEvent) -> void:
     if in_menu:
