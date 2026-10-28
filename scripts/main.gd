@@ -137,7 +137,7 @@ func _ready() -> void:
     result_label.visible = false
     add_child(result_label)
     restart_button = Button.new()
-    restart_button.text = "ЗАНОВО (R)"
+    restart_button.text = "ЗАНОВО" if OS.has_feature("mobile") else "ЗАНОВО (R)"
     restart_button.position = Vector2(740, 625)
     restart_button.size = Vector2(145, 65)
     restart_button.visible = false
