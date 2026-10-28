@@ -137,7 +137,7 @@ func _ready() -> void:
     result_label.visible = false
     add_child(result_label)
     restart_button = Button.new()
-    restart_button.text = "ЗАНОВО"
+    restart_button.text = "ЗАНОВО (R)"
     restart_button.position = Vector2(740, 625)
     restart_button.size = Vector2(145, 65)
     restart_button.visible = false
@@ -445,6 +445,11 @@ func _notification(what: int) -> void:
         joystick_axis = 0.0
         for key in held.keys():
             held[key] = false
+
+func _unhandled_key_input(event: InputEvent) -> void:
+    if not in_menu and round_over and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R:
+        restart_round()
+        get_viewport().set_input_as_handled()
 
 func _input(event: InputEvent) -> void:
     if in_menu:
