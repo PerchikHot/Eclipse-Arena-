@@ -195,6 +195,11 @@ func _ready() -> void:
     reset_button.position = Vector2(55, 430)
     reset_button.size = Vector2(350, 75)
     reset_button.pressed.connect(func() -> void:
+        # A new match starts at 0:0; round restart keeps the existing score.
+        player_wins = 0
+        enemy_wins = 0
+        draws = 0
+        score_label.text = "ИГРОК 0 : 0 ПРОТИВНИК  •  НИЧЬИХ: 0"
         show_selection()
     )
     menu_layer.add_child(reset_button)
