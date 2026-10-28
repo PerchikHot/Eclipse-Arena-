@@ -36,6 +36,8 @@ var pause_toggle_button: Button
 var pause_overlay: Label
 var manual_paused := false
 var audio_players: Array[AudioStreamPlayer] = []
+var sound_muted := false
+var sound_button: Button
 var sound_library: Dictionary = {}
 var sound_slot := 0
 var fighter_names := ["ЯМАТО", "ЭРЗА", "АЛЬФА", "РИАС"]
@@ -207,7 +209,7 @@ func _ready() -> void:
     menu_layer.add_child(subtitle)
     if not OS.has_feature("mobile"):
         var keyboard_hint := Label.new()
-        keyboard_hint.text = "A/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец  •  ESC — меню  •  F11 — экран"
+        keyboard_hint.text = "A/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец  •  M — звук  •  ESC — меню  •  F11 — экран"
         keyboard_hint.position = Vector2(55, 285)
         keyboard_hint.size = Vector2(460, 44)
         keyboard_hint.add_theme_font_size_override("font_size", 14)
@@ -232,6 +234,13 @@ func _ready() -> void:
         show_selection()
     )
     menu_layer.add_child(reset_button)
+    sound_button = Button.new()
+    sound_button.text = "ЗВУК: ВКЛ  •  M" if not OS.has_feature("mobile") else "ЗВУК: ВКЛ"
+    sound_button.position = Vector2(55, 530)
+    sound_button.size = Vector2(350, 60)
+    sound_button.add_theme_font_size_override("font_size", 22)
+    sound_button.pressed.connect(toggle_sound)
+    menu_layer.add_child(sound_button)
     var version_label := Label.new()
     version_label.text = "ECLIPSE ARENA  •  v%s" % str(ProjectSettings.get_setting("application/config/version", "0.6.5"))
     version_label.position = Vector2(65, 650)
@@ -362,8 +371,17 @@ func make_sound(duration: float, start_hz: float, end_hz: float, volume: float, 
     sound.data = bytes
     return sound
 
+func toggle_sound() -> void:
+    sound_muted = not sound_muted
+    sound_button.text = ("ЗВУК: ВЫКЛ" if sound_muted else "ЗВУК: ВКЛ") + ("  •  M" if not OS.has_feature("mobile") else "")
+    if sound_muted:
+        for player in audio_players:
+            player.stop()
+    else:
+        play_sound("menu")
+
 func play_sound(sound_name: String) -> void:
-    if not sound_library.has(sound_name):
+    if sound_muted or not sound_library.has(sound_name):
         return
     var player: AudioStreamPlayer = audio_players[sound_slot]
     sound_slot = (sound_slot + 1) % audio_players.size()
@@ -540,6 +558,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
         if mode == DisplayServer.WINDOW_MODE_FULLSCREEN:
             next_mode = DisplayServer.WINDOW_MODE_WINDOWED
         DisplayServer.window_set_mode(next_mode)
+        get_viewport().set_input_as_handled()
+        return
+    # Audio can be toggled even during combat or character selection.
+    if not OS.has_feature("mobile") and event.keycode == KEY_M:
+        toggle_sound()
         get_viewport().set_input_as_handled()
         return
     # The selection screen is a menu too, but Escape should go back.
