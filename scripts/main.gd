@@ -609,6 +609,14 @@ func start_game() -> void:
     result_label.visible = round_over
     update_health_labels()
 
+# Warn before the opponent has enough energy for a special attack.
+# The text as well as the color changes, so the warning is accessible on mobile.
+func update_enemy_energy_label() -> void:
+    var ready := enemy_energy >= skill_cost
+    enemy_energy_label.text = ("СПЕЦ ВРАГА ГОТОВ: %d/100" if ready else "ЭНЕРГИЯ ВРАГА: %d/100") % int(enemy_energy)
+    enemy_energy_label.add_theme_color_override("font_color",
+        Color("#ff737e") if ready else Color("#fff0d7"))
+
 # Keep the exact HP visible alongside the colored bars on both platforms.
 func update_health_labels() -> void:
     player_name_label.text = "%s  •  %d HP" % [fighter_names[selected_fighter], hp_left]
