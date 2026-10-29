@@ -350,6 +350,8 @@ func preview_fighter(index: int) -> void:
     selection_preview.texture = fighter_textures[index]
     selection_name.text = fighter_names[index]
     costume_button.text = "КОСТЮМ: " + costume_names[selected_costume]
+    # Reflect the restored costume immediately on the selection screen.
+    selection_preview.modulate = Color.WHITE if selected_costume == 0 else Color("#c9d7ff") if selected_costume == 1 else Color("#ffc4d9")
     for i in range(selection_buttons.size()):
         selection_buttons[i].modulate = Color("#ffffff") if i == index else Color("#85849a")
 
