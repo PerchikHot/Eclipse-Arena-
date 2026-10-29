@@ -700,7 +700,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
         get_viewport().set_input_as_handled()
         return
     if not OS.has_feature("mobile") and event.keycode == KEY_F1 and not in_menu:
-        controls_help_label.visible = not controls_help_label.visible
+        toggle_controls_help()
         get_viewport().set_input_as_handled()
         return
     # The selection screen is a menu too, but Escape should go back.
