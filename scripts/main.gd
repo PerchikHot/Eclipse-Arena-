@@ -81,6 +81,9 @@ func _ready() -> void:
     var saved_settings := ConfigFile.new()
     if saved_settings.load("user://settings.cfg") == OK:
         sound_muted = saved_settings.get_value("audio", "muted", false) == true
+        # Restore the desktop display choice; Android keeps its own layout.
+        if not OS.has_feature("mobile") and saved_settings.get_value("display", "fullscreen", false) == true:
+            DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
         # Restore selection only when the stored values are valid integers.
         # Corrupted or older settings must not index outside the fighter list.
         var stored_fighter = saved_settings.get_value("selection", "fighter", 0)
@@ -623,6 +626,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
         if mode == DisplayServer.WINDOW_MODE_FULLSCREEN:
             next_mode = DisplayServer.WINDOW_MODE_WINDOWED
         DisplayServer.window_set_mode(next_mode)
+        # Save only the display setting, preserving audio and fighter choices.
+        var display_settings := ConfigFile.new()
+        display_settings.load("user://settings.cfg")
+        display_settings.set_value("display", "fullscreen", next_mode == DisplayServer.WINDOW_MODE_FULLSCREEN)
+        display_settings.save("user://settings.cfg")
         get_viewport().set_input_as_handled()
         return
     # Audio can be toggled even during combat or character selection.
