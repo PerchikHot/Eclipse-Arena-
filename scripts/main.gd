@@ -942,7 +942,7 @@ func _process(delta: float) -> void:
                 return
     # Communicate when the special attack is usable and when blocking is active.
     skill_label.text = ("СПЕЦ ГОТОВ %d/100" if skill_energy >= skill_cost else "ЭНЕРГИЯ %d/100") % int(skill_energy)
-    enemy_energy_label.text = "ЭНЕРГИЯ ВРАГА: %d/100" % int(enemy_energy)
+    update_enemy_energy_label()
     cooldown_label.text = ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
     update_health_labels()
     queue_redraw()
