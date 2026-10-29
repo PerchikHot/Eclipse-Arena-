@@ -65,6 +65,7 @@ var joystick_center := Vector2(112, 643)
 var joystick_axis := 0.0
 var joystick_touch := -1
 var combo_hits := 0
+var best_combo := 0
 var combo_timer := 0.0
 var block_timer := 0.0
 var skill_energy := 0.0
@@ -610,6 +611,7 @@ func restart_round() -> void:
     attack_cooldown = 0.0
     enemy_cooldown = 0.0
     combo_hits = 0
+    best_combo = 0
     combo_timer = 0.0
     block_timer = 0.0
     skill_energy = 0.0
@@ -661,6 +663,8 @@ func finish_round(outcome: int) -> void:
         result_label.text += "\nНОКАУТ"
     # Explain timeout victories and narrow defeats with exact remaining HP.
     result_label.text += "\nHP: %d / %d" % [hp_left, hp_right]
+    if best_combo > 1:
+        result_label.text += "\nЛУЧШЕЕ КОМБО: %d" % best_combo
     score_label.text = "ИГРОК %d : %d ПРОТИВНИК  •  НИЧЬИХ: %d" % [player_wins, enemy_wins, draws]
     result_label.visible = true
     restart_button.visible = true
@@ -832,6 +836,7 @@ func _process(delta: float) -> void:
         play_sound("swing")
         if absf(x_left - x_right) < (195.0 if can_skill else 155.0) and absf(y_left - 610.0) < 115.0:
             combo_hits += 1
+            best_combo = maxi(best_combo, combo_hits)
             skill_energy = minf(100.0, skill_energy + (0.0 if can_skill else 11.0))
             combo_timer = 1.3
             hp_right = maxi(0, hp_right - (18 if can_skill else 8 + mini(combo_hits, 4)))
