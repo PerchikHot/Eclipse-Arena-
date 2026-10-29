@@ -75,6 +75,7 @@ var skill_cost := 40.0
 var enemy_energy := 0.0
 var enemy_skill_fx := 0.0
 var skill_label: Label
+var enemy_energy_label: Label
 var round_duration := 99.0
 var round_seconds := 99.0
 var duration_button: Button
@@ -198,6 +199,15 @@ func _ready() -> void:
     skill_label.size = Vector2(240, 30)
     skill_label.add_theme_font_size_override("font_size", 20)
     add_child(skill_label)
+    # Numeric enemy energy makes the special-attack threat readable on mobile.
+    enemy_energy_label = Label.new()
+    enemy_energy_label.position = Vector2(925, 75)
+    enemy_energy_label.size = Vector2(310, 22)
+    enemy_energy_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+    enemy_energy_label.add_theme_font_size_override("font_size", 13)
+    enemy_energy_label.add_theme_color_override("font_color", Color("#fff0d7"))
+    enemy_energy_label.text = "ЭНЕРГИЯ ВРАГА: 0/100"
+    add_child(enemy_energy_label)
     cooldown_label = Label.new()
     cooldown_label.position = Vector2(640, 650)
     cooldown_label.add_theme_font_size_override("font_size", 17)
@@ -565,6 +575,7 @@ func show_menu() -> void:
     controls_help_button.visible = false
     cooldown_label.visible = false
     skill_label.visible = false
+    enemy_energy_label.visible = false
     round_timer_label.visible = false
     round_number_label.visible = false
     score_label.visible = false
@@ -587,6 +598,7 @@ func start_game() -> void:
     controls_help_button.visible = true
     cooldown_label.visible = true
     skill_label.visible = true
+    enemy_energy_label.visible = true
     round_timer_label.visible = true
     round_number_label.visible = true
     score_label.visible = true
@@ -638,6 +650,7 @@ func restart_round() -> void:
     enemy_skill_fx = 0.0
     # Reset HUD immediately; never show stale cooldown/combo from last round.
     skill_label.text = "ЭНЕРГИЯ 0/100"
+    enemy_energy_label.text = "ЭНЕРГИЯ ВРАГА: 0/100"
     cooldown_label.text = "ГОТОВО"
     round_seconds = round_duration
     round_timer_label.text = str(int(round_duration))
@@ -921,6 +934,7 @@ func _process(delta: float) -> void:
                 return
     # Communicate when the special attack is usable and when blocking is active.
     skill_label.text = ("СПЕЦ ГОТОВ %d/100" if skill_energy >= skill_cost else "ЭНЕРГИЯ %d/100") % int(skill_energy)
+    enemy_energy_label.text = "ЭНЕРГИЯ ВРАГА: %d/100" % int(enemy_energy)
     cooldown_label.text = ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
     update_health_labels()
     queue_redraw()
