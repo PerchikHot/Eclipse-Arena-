@@ -202,6 +202,12 @@ func _ready() -> void:
     pause_toggle_button.size = Vector2(180, 52)
     pause_toggle_button.pressed.connect(toggle_pause)
     add_child(pause_toggle_button)
+    controls_help_button = Button.new()
+    controls_help_button.text = "УПРАВЛЕНИЕ" if OS.has_feature("mobile") else "ПОМОЩЬ (F1)"
+    controls_help_button.position = Vector2(735, 132)
+    controls_help_button.size = Vector2(165, 52)
+    controls_help_button.pressed.connect(toggle_controls_help)
+    add_child(controls_help_button)
     pause_overlay = Label.new()
     pause_overlay.text = "ПАУЗА\nP — ПРОДОЛЖИТЬ" if not OS.has_feature("mobile") else "ПАУЗА\nНАЖМИ ПРОДОЛЖИТЬ"
     pause_overlay.position = Vector2(430, 250)
