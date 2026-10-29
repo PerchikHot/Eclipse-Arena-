@@ -605,6 +605,11 @@ func finish_round(outcome: int) -> void:
         play_sound("menu")
         draws += 1
         result_label.text = "НИЧЬЯ!"
+    # Distinguish a time-limit decision from a knockout for both platforms.
+    if round_seconds <= 0.0:
+        result_label.text += "\nПО ВРЕМЕНИ"
+    elif hp_left <= 0 or hp_right <= 0:
+        result_label.text += "\nНОКАУТ"
     # Explain timeout victories and narrow defeats with exact remaining HP.
     result_label.text += "\nHP: %d / %d" % [hp_left, hp_right]
     score_label.text = "ИГРОК %d : %d ПРОТИВНИК  •  НИЧЬИХ: %d" % [player_wins, enemy_wins, draws]
