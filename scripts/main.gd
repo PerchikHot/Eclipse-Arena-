@@ -19,6 +19,7 @@ var draws := 0
 var score_label: Label
 var result_label: Label
 var restart_button: Button
+var change_fighter_button: Button
 var player_attack_fx := 0.0
 var enemy_attack_fx := 0.0
 var player_hit_fx := 0.0
@@ -150,6 +151,13 @@ func _ready() -> void:
     restart_button.visible = false
     restart_button.pressed.connect(restart_round)
     add_child(restart_button)
+    change_fighter_button = Button.new()
+    change_fighter_button.text = "СМЕНИТЬ БОЙЦА" if OS.has_feature("mobile") else "БОЕЦ (Q)"
+    change_fighter_button.position = Vector2(510, 625)
+    change_fighter_button.size = Vector2(210, 65)
+    change_fighter_button.visible = false
+    change_fighter_button.pressed.connect(show_selection)
+    add_child(change_fighter_button)
     skill_label = Label.new()
     skill_label.position = Vector2(650, 615)
     skill_label.size = Vector2(240, 30)
@@ -444,6 +452,7 @@ func show_menu() -> void:
     player_name_label.visible = false
     enemy_name_label.visible = false
     restart_button.visible = false
+    change_fighter_button.visible = false
     result_label.visible = false
 
 func start_game() -> void:
@@ -463,6 +472,7 @@ func start_game() -> void:
     player_name_label.visible = true
     enemy_name_label.visible = true
     restart_button.visible = round_over
+    change_fighter_button.visible = round_over
     result_label.visible = round_over
     player_name_label.text = fighter_names[selected_fighter]
     enemy_name_label.text = fighter_names[enemy_fighter]
@@ -505,6 +515,7 @@ func restart_round() -> void:
     ai_retreat = false
     result_label.visible = false
     restart_button.visible = false
+    change_fighter_button.visible = false
     queue_redraw()
 
 # outcome: 1 = victory, -1 = defeat, 0 = draw (equal HP at timeout).
@@ -527,6 +538,7 @@ func finish_round(outcome: int) -> void:
     score_label.text = "ИГРОК %d : %d ПРОТИВНИК  •  НИЧЬИХ: %d" % [player_wins, enemy_wins, draws]
     result_label.visible = true
     restart_button.visible = true
+    change_fighter_button.visible = true
 
 func make_rig() -> Dictionary:
     var anchors := {}
@@ -578,6 +590,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
         return
     if event.keycode == KEY_ESCAPE:
         show_menu()
+        get_viewport().set_input_as_handled()
+    elif round_over and event.keycode == KEY_Q:
+        show_selection()
         get_viewport().set_input_as_handled()
     elif round_over and event.keycode in [KEY_R, KEY_ENTER, KEY_KP_ENTER]:
         restart_round()
