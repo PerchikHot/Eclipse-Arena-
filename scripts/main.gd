@@ -375,6 +375,12 @@ func select_fighter(index: int) -> void:
     selection_choice = index
     save_selection_preferences()
     enemy_fighter = (index + randi_range(1, 3)) % fighter_names.size()
+    # Choosing a fighter starts a new match. Never carry a previous
+    # character's wins, losses or draws into the next match.
+    player_wins = 0
+    enemy_wins = 0
+    draws = 0
+    score_label.text = "ИГРОК 0 : 0 ПРОТИВНИК  •  НИЧЬИХ: 0"
     update_health_labels()
     selection_layer.visible = false
     restart_round()
