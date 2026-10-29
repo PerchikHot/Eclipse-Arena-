@@ -66,6 +66,8 @@ var joystick_axis := 0.0
 var joystick_touch := -1
 var combo_hits := 0
 var best_combo := 0
+var damage_dealt := 0
+var damage_taken := 0
 var combo_timer := 0.0
 var block_timer := 0.0
 var skill_energy := 0.0
@@ -627,6 +629,8 @@ func restart_round() -> void:
     enemy_cooldown = 0.0
     combo_hits = 0
     best_combo = 0
+    damage_dealt = 0
+    damage_taken = 0
     combo_timer = 0.0
     block_timer = 0.0
     skill_energy = 0.0
@@ -678,6 +682,7 @@ func finish_round(outcome: int) -> void:
         result_label.text += "\nНОКАУТ"
     # Explain timeout victories and narrow defeats with exact remaining HP.
     result_label.text += "\nHP: %d / %d" % [hp_left, hp_right]
+    result_label.text += "\nУРОН: %d нанесено / %d получено" % [damage_dealt, damage_taken]
     if best_combo > 1:
         result_label.text += "\nЛУЧШЕЕ КОМБО: %d" % best_combo
     score_label.text = "ИГРОК %d : %d ПРОТИВНИК  •  НИЧЬИХ: %d" % [player_wins, enemy_wins, draws]
@@ -865,7 +870,9 @@ func _process(delta: float) -> void:
             best_combo = maxi(best_combo, combo_hits)
             skill_energy = minf(100.0, skill_energy + (0.0 if can_skill else 11.0))
             combo_timer = 1.3
+            var hp_before_hit := hp_right
             hp_right = maxi(0, hp_right - (18 if can_skill else 8 + mini(combo_hits, 4)))
+            damage_dealt += hp_before_hit - hp_right
             enemy_hit_fx = 0.22
             enemy_energy = minf(100.0, enemy_energy + 5.0)
             impact_flash = 0.15
@@ -901,7 +908,12 @@ func _process(delta: float) -> void:
             player_hit_fx = 0.22
             impact_flash = 0.15
             play_sound("hit")
+            var hp_before_enemy_hit := hp_left
             hp_left = maxi(0, hp_left - ((4 if enemy_special else 2) if block_timer > 0.0 else (15 if enemy_special else 7)))
+            damage_taken += hp_before_enemy_hit - hp_left
+            # Taking damage interrupts the current combo; best combo stays in the round summary.
+            combo_hits = 0
+            combo_timer = 0.0
             enemy_energy = minf(100.0, enemy_energy + (0.0 if enemy_special else 9.0))
             skill_energy = minf(100.0, skill_energy + 4.0)
             if hp_left == 0:
