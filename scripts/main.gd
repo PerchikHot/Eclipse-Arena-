@@ -590,6 +590,12 @@ func start_game() -> void:
 func update_health_labels() -> void:
     player_name_label.text = "%s  •  %d HP" % [fighter_names[selected_fighter], hp_left]
     enemy_name_label.text = "%s  •  %d HP" % [fighter_names[enemy_fighter], hp_right]
+    # Low-health warnings are visible without relying on the HP bar alone.
+    # Reset the color at the start of every new round.
+    player_name_label.add_theme_color_override("font_color",
+        Color("#ff737e") if hp_left <= 25 else Color("#e7f0ff"))
+    enemy_name_label.add_theme_color_override("font_color",
+        Color("#ff737e") if hp_right <= 25 else Color("#e7f0ff"))
 
 func restart_round() -> void:
     controls_help_label.visible = false
