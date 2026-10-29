@@ -81,6 +81,14 @@ func _ready() -> void:
     var saved_settings := ConfigFile.new()
     if saved_settings.load("user://settings.cfg") == OK:
         sound_muted = saved_settings.get_value("audio", "muted", false) == true
+        # Restore selection only when the stored values are valid integers.
+        # Corrupted or older settings must not index outside the fighter list.
+        var stored_fighter = saved_settings.get_value("selection", "fighter", 0)
+        var stored_costume = saved_settings.get_value("selection", "costume", 0)
+        if typeof(stored_fighter) == TYPE_INT:
+            selection_choice = clampi(stored_fighter, 0, fighter_names.size() - 1)
+        if typeof(stored_costume) == TYPE_INT:
+            selected_costume = clampi(stored_costume, 0, costume_names.size() - 1)
     for character in ["yamato", "erza", "alpha", "rias"]:
         fighter_textures.append(load("res://assets/fighters/%s.svg" % character))
     sound_library["swing"] = make_sound(0.13, 220.0, 90.0, 0.14, 0)
@@ -345,14 +353,25 @@ func preview_fighter(index: int) -> void:
     for i in range(selection_buttons.size()):
         selection_buttons[i].modulate = Color("#ffffff") if i == index else Color("#85849a")
 
+func save_selection_preferences() -> void:
+    # Keep audio and any future settings intact when saving fighter choices.
+    var settings := ConfigFile.new()
+    settings.load("user://settings.cfg")
+    settings.set_value("selection", "fighter", selection_choice)
+    settings.set_value("selection", "costume", selected_costume)
+    settings.save("user://settings.cfg")
+
 func cycle_costume() -> void:
     selected_costume = (selected_costume + 1) % costume_names.size()
     costume_button.text = "КОСТЮМ: " + costume_names[selected_costume]
     selection_preview.modulate = Color.WHITE if selected_costume == 0 else Color("#c9d7ff") if selected_costume == 1 else Color("#ffc4d9")
+    save_selection_preferences()
     play_sound("menu")
 
 func select_fighter(index: int) -> void:
     selected_fighter = index
+    selection_choice = index
+    save_selection_preferences()
     enemy_fighter = (index + randi_range(1, 3)) % fighter_names.size()
     update_health_labels()
     selection_layer.visible = false
