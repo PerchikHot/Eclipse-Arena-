@@ -221,7 +221,7 @@ func _ready() -> void:
     add_child(pause_overlay)
     # Desktop-only help can be opened during a match or while paused.
     controls_help_label = Label.new()
-    controls_help_label.text = "УПРАВЛЕНИЕ (кнопка — скрыть)\nДжойстик слева — движение\nПРЫЖОК / УДАР / БЛОК / СПЕЦ — справа\nПАУЗА — остановить бой  •  МЕНЮ — выйти\nПосле раунда: ЗАНОВО или СМЕНИТЬ БОЙЦА" if OS.has_feature("mobile") else "УПРАВЛЕНИЕ (F1 — скрыть)\nA/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец\nP — пауза  •  M — звук  •  ESC — меню\nПосле раунда: R — заново  •  Q — боец"
+    controls_help_label.text = "УПРАВЛЕНИЕ (кнопка — скрыть)\nБой на паузе, пока открыта помощь\nДжойстик слева — движение\nПРЫЖОК / УДАР / БЛОК / СПЕЦ — справа\nПАУЗА — остановить бой  •  МЕНЮ — выйти\nПосле раунда: ЗАНОВО или СМЕНИТЬ БОЙЦА" if OS.has_feature("mobile") else "УПРАВЛЕНИЕ (F1 — скрыть)\nБой на паузе, пока открыта помощь\nA/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец\nP — пауза  •  M — звук  •  ESC — меню\nПосле раунда: R — заново  •  Q — боец"
     controls_help_label.position = Vector2(355, 185)
     controls_help_label.size = Vector2(580, 240)
     controls_help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -517,8 +517,17 @@ func toggle_pause() -> void:
             held[key] = false
 
 func toggle_controls_help() -> void:
-    if not in_menu:
-        controls_help_label.visible = not controls_help_label.visible
+    if in_menu:
+        return
+    controls_help_label.visible = not controls_help_label.visible
+    # Reading the controls must not cost round time or let the AI attack.
+    # Release held inputs so closing help cannot resume a stuck action.
+    if controls_help_label.visible:
+        stop_active_sounds()
+        joystick_touch = -1
+        joystick_axis = 0.0
+        for key in held.keys():
+            held[key] = false
 
 
 func show_menu() -> void:
@@ -582,6 +591,7 @@ func update_health_labels() -> void:
     enemy_name_label.text = "%s  •  %d HP" % [fighter_names[enemy_fighter], hp_right]
 
 func restart_round() -> void:
+    controls_help_label.visible = false
     manual_paused = false
     pause_overlay.visible = false
     pause_toggle_button.text = "ПАУЗА" if OS.has_feature("mobile") else "ПАУЗА (P)"
@@ -742,7 +752,7 @@ func _input(event: InputEvent) -> void:
                 return
         get_viewport().set_input_as_handled()
         return
-    if in_menu or manual_paused:
+    if in_menu or manual_paused or controls_help_label.visible:
         return
     if event is InputEventScreenTouch:
         if event.pressed and event.position.distance_to(joystick_center) < 105.0 and joystick_touch == -1:
@@ -757,7 +767,7 @@ func _input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
     # Do not let the round timer or opponent advance during Alt-Tab or
     # Android notification interruptions.
-    if round_over or in_menu or manual_paused or not has_game_focus:
+    if round_over or in_menu or manual_paused or controls_help_label.visible or not has_game_focus:
         return
     animation_clock += delta
     round_seconds = maxf(0.0, round_seconds - delta)
