@@ -221,7 +221,7 @@ func _ready() -> void:
     add_child(pause_overlay)
     # Desktop-only help can be opened during a match or while paused.
     controls_help_label = Label.new()
-    controls_help_label.text = "УПРАВЛЕНИЕ (кнопка — скрыть)\nБой на паузе, пока открыта помощь\nДжойстик слева — движение\nПРЫЖОК / УДАР / БЛОК / СПЕЦ — справа\nПАУЗА — остановить бой  •  МЕНЮ — выйти\nПосле раунда: ЗАНОВО или СМЕНИТЬ БОЙЦА" if OS.has_feature("mobile") else "УПРАВЛЕНИЕ (F1 — скрыть)\nБой на паузе, пока открыта помощь\nA/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец\nP — пауза  •  M — звук  •  ESC — меню\nПосле раунда: R — заново  •  Q — боец"
+    controls_help_label.text = "УПРАВЛЕНИЕ (кнопка — скрыть)\nБой на паузе, пока открыта помощь\nДжойстик слева — движение\nПРЫЖОК / УДАР / БЛОК / СПЕЦ — справа\nПАУЗА — остановить бой  •  МЕНЮ — выйти\nПосле раунда: ЗАНОВО или СМЕНИТЬ БОЙЦА" if OS.has_feature("mobile") else "УПРАВЛЕНИЕ (F1 — скрыть)\nБой на паузе, пока открыта помощь\nA/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец\nP — пауза  •  M — звук  •  ESC — закрыть помощь\nПосле раунда: R — заново  •  Q — боец"
     controls_help_label.position = Vector2(355, 185)
     controls_help_label.size = Vector2(580, 240)
     controls_help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -710,6 +710,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
         get_viewport().set_input_as_handled()
         return
     if not OS.has_feature("mobile") and event.keycode == KEY_F1 and not in_menu:
+        toggle_controls_help()
+        get_viewport().set_input_as_handled()
+        return
+    # Escape closes the help overlay first, instead of accidentally
+    # abandoning the match while the player is reading controls.
+    if event.keycode == KEY_ESCAPE and controls_help_label.visible:
         toggle_controls_help()
         get_viewport().set_input_as_handled()
         return
