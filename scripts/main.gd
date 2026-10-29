@@ -80,6 +80,8 @@ var timer_warning_active := false
 var has_game_focus := true
 var round_timer_label: Label
 var round_number_label: Label
+var fps_label: Label
+var fps_elapsed := 0.0
 
 func _ready() -> void:
     # Sound preference is device-local until secure cross-device sync exists.
@@ -163,6 +165,13 @@ func _ready() -> void:
     score_label.add_theme_font_size_override("font_size", 16)
     score_label.text = "ИГРОК 0 : 0 ПРОТИВНИК"
     add_child(score_label)
+    # Optional desktop performance diagnostic; disabled by default.
+    fps_label = Label.new()
+    fps_label.position = Vector2(1110, 94)
+    fps_label.add_theme_font_size_override("font_size", 18)
+    fps_label.add_theme_color_override("font_color", Color("#58c9ff"))
+    fps_label.visible = false
+    add_child(fps_label)
     result_label = Label.new()
     result_label.position = Vector2(500, 280)
     result_label.add_theme_font_size_override("font_size", 42)
@@ -714,6 +723,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
         display_settings.save("user://settings.cfg")
         get_viewport().set_input_as_handled()
         return
+    # F3 shows live frame rate without affecting gameplay or saved data.
+    if not OS.has_feature("mobile") and event.keycode == KEY_F3:
+        fps_label.visible = not fps_label.visible
+        fps_elapsed = 1.0
+        get_viewport().set_input_as_handled()
+        return
     # Audio can be toggled even during combat or character selection.
     if not OS.has_feature("mobile") and event.keycode == KEY_M:
         toggle_sound()
@@ -781,6 +796,11 @@ func _input(event: InputEvent) -> void:
         joystick_axis = clampf((event.position.x - joystick_center.x) / 58.0, -1.0, 1.0)
 
 func _process(delta: float) -> void:
+    if fps_label.visible:
+        fps_elapsed += delta
+        if fps_elapsed >= 0.5:
+            fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
+            fps_elapsed = 0.0
     # Do not let the round timer or opponent advance during Alt-Tab or
     # Android notification interruptions.
     if round_over or in_menu or manual_paused or controls_help_label.visible or not has_game_focus:
