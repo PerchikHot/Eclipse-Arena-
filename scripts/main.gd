@@ -69,6 +69,7 @@ var best_combo := 0
 var damage_dealt := 0
 var damage_taken := 0
 var hits_landed := 0
+var attacks_attempted := 0
 var hits_received := 0
 var blocked_hits := 0
 var combo_timer := 0.0
@@ -180,7 +181,8 @@ func _ready() -> void:
     add_child(fps_label)
     result_label = Label.new()
     result_label.position = Vector2(500, 280)
-    result_label.add_theme_font_size_override("font_size", 42)
+    # Round statistics fit on mobile without overlapping rematch buttons.
+    result_label.add_theme_font_size_override("font_size", 30)
     result_label.visible = false
     add_child(result_label)
     restart_button = Button.new()
@@ -655,6 +657,7 @@ func restart_round() -> void:
     damage_dealt = 0
     damage_taken = 0
     hits_landed = 0
+    attacks_attempted = 0
     hits_received = 0
     blocked_hits = 0
     combo_timer = 0.0
@@ -711,6 +714,12 @@ func finish_round(outcome: int) -> void:
     result_label.text += "\nHP: %d / %d" % [hp_left, hp_right]
     result_label.text += "\nУРОН: %d нанесено / %d получено" % [damage_dealt, damage_taken]
     result_label.text += "\nПОПАДАНИЯ: %d / %d  •  БЛОК: %d" % [hits_landed, hits_received, blocked_hits]
+    # Accuracy is based on actual attacks, not key presses during cooldown.
+    # A round with zero attacks is shown as 0%, never a division by zero.
+    var accuracy := 0
+    if attacks_attempted > 0:
+        accuracy = roundi(float(hits_landed) * 100.0 / float(attacks_attempted))
+    result_label.text += "\nТОЧНОСТЬ: %d%% (%d из %d)" % [accuracy, hits_landed, attacks_attempted]
     if best_combo > 1:
         result_label.text += "\nЛУЧШЕЕ КОМБО: %d" % best_combo
     score_label.text = "ИГРОК %d : %d ПРОТИВНИК  •  НИЧЬИХ: %d" % [player_wins, enemy_wins, draws]
@@ -891,6 +900,7 @@ func _process(delta: float) -> void:
         if can_skill:
             skill_energy -= skill_cost
         attack_cooldown = 0.8 if can_skill else 0.43
+        attacks_attempted += 1
         player_attack_fx = 0.18
         play_sound("swing")
         if absf(x_left - x_right) < (195.0 if can_skill else 155.0) and absf(y_left - 610.0) < 115.0:
