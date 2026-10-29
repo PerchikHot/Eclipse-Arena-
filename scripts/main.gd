@@ -516,6 +516,11 @@ func toggle_pause() -> void:
         for key in held.keys():
             held[key] = false
 
+func toggle_controls_help() -> void:
+    if not in_menu:
+        controls_help_label.visible = not controls_help_label.visible
+
+
 func show_menu() -> void:
     controls_help_label.visible = false
     play_sound("menu")
