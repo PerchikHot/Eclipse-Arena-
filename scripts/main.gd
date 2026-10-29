@@ -35,6 +35,7 @@ var menu_layer: Control
 var pause_button: Button
 var pause_toggle_button: Button
 var pause_overlay: Label
+var controls_help_label: Label
 var manual_paused := false
 var audio_players: Array[AudioStreamPlayer] = []
 var sound_muted := false
@@ -205,6 +206,20 @@ func _ready() -> void:
     pause_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
     pause_overlay.visible = false
     add_child(pause_overlay)
+    # Desktop-only help can be opened during a match or while paused.
+    controls_help_label = Label.new()
+    controls_help_label.text = "УПРАВЛЕНИЕ (F1 — скрыть)\nA/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец\nP — пауза  •  M — звук  •  ESC — меню\nПосле раунда: R — заново  •  Q — боец"
+    controls_help_label.position = Vector2(355, 185)
+    controls_help_label.size = Vector2(580, 240)
+    controls_help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    controls_help_label.add_theme_font_size_override("font_size", 22)
+    controls_help_label.add_theme_color_override("font_color", Color("#e7f0ff"))
+    controls_help_label.add_theme_color_override("font_shadow_color", Color("#050b20"))
+    controls_help_label.add_theme_constant_override("shadow_offset_x", 2)
+    controls_help_label.add_theme_constant_override("shadow_offset_y", 2)
+    controls_help_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    controls_help_label.visible = false
+    add_child(controls_help_label)
     menu_layer = Control.new()
     menu_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     add_child(menu_layer)
@@ -232,7 +247,7 @@ func _ready() -> void:
     menu_layer.add_child(subtitle)
     if not OS.has_feature("mobile"):
         var keyboard_hint := Label.new()
-        keyboard_hint.text = "A/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец  •  M — звук  •  ESC — меню  •  F11 — экран"
+        keyboard_hint.text = "A/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец  •  P — пауза  •  F1 — помощь"
         keyboard_hint.position = Vector2(55, 285)
         keyboard_hint.size = Vector2(460, 44)
         keyboard_hint.add_theme_font_size_override("font_size", 14)
@@ -470,6 +485,7 @@ func toggle_pause() -> void:
             held[key] = false
 
 func show_menu() -> void:
+    controls_help_label.visible = false
     play_sound("menu")
     manual_paused = false
     pause_overlay.visible = false
@@ -500,6 +516,7 @@ func show_menu() -> void:
     result_label.visible = false
 
 func start_game() -> void:
+    controls_help_label.visible = false
     play_sound("menu")
     in_menu = false
     sync_pause_overlay()
@@ -636,6 +653,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
     # Audio can be toggled even during combat or character selection.
     if not OS.has_feature("mobile") and event.keycode == KEY_M:
         toggle_sound()
+        get_viewport().set_input_as_handled()
+        return
+    if not OS.has_feature("mobile") and event.keycode == KEY_F1 and not in_menu:
+        controls_help_label.visible = not controls_help_label.visible
         get_viewport().set_input_as_handled()
         return
     # The selection screen is a menu too, but Escape should go back.
