@@ -36,6 +36,7 @@ var pause_button: Button
 var pause_toggle_button: Button
 var pause_overlay: Label
 var controls_help_label: Label
+var controls_help_button: Button
 var manual_paused := false
 var audio_players: Array[AudioStreamPlayer] = []
 var sound_muted := false
