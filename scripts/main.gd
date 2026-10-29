@@ -658,7 +658,7 @@ func restart_round() -> void:
     enemy_skill_fx = 0.0
     # Reset HUD immediately; never show stale cooldown/combo from last round.
     skill_label.text = "ЭНЕРГИЯ 0/100"
-    enemy_energy_label.text = "ЭНЕРГИЯ ВРАГА: 0/100"
+    update_enemy_energy_label()
     cooldown_label.text = "ГОТОВО"
     round_seconds = round_duration
     round_timer_label.text = str(int(round_duration))
