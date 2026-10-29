@@ -585,6 +585,8 @@ func finish_round(outcome: int) -> void:
         play_sound("menu")
         draws += 1
         result_label.text = "НИЧЬЯ!"
+    # Explain timeout victories and narrow defeats with exact remaining HP.
+    result_label.text += "\nHP: %d / %d" % [hp_left, hp_right]
     score_label.text = "ИГРОК %d : %d ПРОТИВНИК  •  НИЧЬИХ: %d" % [player_wins, enemy_wins, draws]
     result_label.visible = true
     restart_button.visible = true
