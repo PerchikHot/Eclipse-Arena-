@@ -921,6 +921,12 @@ func _draw() -> void:
     draw_line(Vector2(785, 100), Vector2(1245, 100), Color("#8173b0"), 2)
     draw_rect(Rect2(525, 5, 230, 115), Color("#211b39", 0.92))
     draw_arc(Vector2(640, 62), 49, 0.0, TAU, 48, Color("#b49aff"), 3)
+    # A visual countdown helps on small screens and respects 60/99/120s rounds.
+    # The bar freezes with the existing pause/focus/help logic.
+    draw_rect(Rect2(570, 110, 140, 6), Color("#39314f"))
+    var time_fraction: float = clampf(round_seconds / maxf(round_duration, 1.0), 0.0, 1.0)
+    var time_color := Color("#ff8b9e") if round_seconds <= 10.0 else Color("#71d7ff")
+    draw_rect(Rect2(570, 110, 140.0 * time_fraction, 6), time_color)
 
 func draw_sprite_fighter(origin: Vector2, fighter_id: int, face_right: bool, motion: float, attack_fx: float, hit_fx: float, health: int) -> void:
     if fighter_id >= fighter_textures.size() or fighter_textures[fighter_id] == null:
