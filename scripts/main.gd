@@ -432,6 +432,11 @@ func play_sound(sound_name: String) -> void:
     player.stream = sound_library[sound_name]
     player.play()
 
+# Stop any lingering impact or victory sound when gameplay is interrupted.
+func stop_active_sounds() -> void:
+    for player in audio_players:
+        player.stop()
+
 # Display the reason for a stopped round, including desktop Alt-Tab
 # and Android notification interruptions. No gameplay resumes until focused.
 func sync_pause_overlay() -> void:
@@ -455,6 +460,7 @@ func toggle_pause() -> void:
     sync_pause_overlay()
     pause_toggle_button.text = ("ПРОДОЛЖИТЬ" if OS.has_feature("mobile") else "ПРОДОЛЖИТЬ (P)") if manual_paused else ("ПАУЗА" if OS.has_feature("mobile") else "ПАУЗА (P)")
     if manual_paused:
+        stop_active_sounds()
         joystick_touch = -1
         joystick_axis = 0.0
         for key in held.keys():
@@ -598,6 +604,7 @@ func _notification(what: int) -> void:
         has_game_focus = true
     if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
         has_game_focus = false
+        stop_active_sounds()
         joystick_touch = -1
         joystick_axis = 0.0
         for key in held.keys():
