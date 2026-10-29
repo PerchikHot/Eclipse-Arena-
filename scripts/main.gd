@@ -540,6 +540,9 @@ func restart_round() -> void:
     skill_energy = 0.0
     enemy_energy = 0.0
     enemy_skill_fx = 0.0
+    # Reset HUD immediately; never show stale cooldown/combo from last round.
+    skill_label.text = "ЭНЕРГИЯ 0/100"
+    cooldown_label.text = "ГОТОВО"
     round_seconds = 99.0
     round_timer_label.text = "99"
     timer_warning_active = false
@@ -775,8 +778,9 @@ func _process(delta: float) -> void:
             if hp_left == 0:
                 finish_round(-1)
                 return
-    skill_label.text = "ЭНЕРГИЯ %d/100" % int(skill_energy)
-    cooldown_label.text = ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
+    # Communicate when the special attack is usable and when blocking is active.
+    skill_label.text = ("СПЕЦ ГОТОВ %d/100" if skill_energy >= skill_cost else "ЭНЕРГИЯ %d/100") % int(skill_energy)
+    cooldown_label.text = ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
     update_health_labels()
     queue_redraw()
 
