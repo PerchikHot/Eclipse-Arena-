@@ -350,8 +350,7 @@ func cycle_costume() -> void:
 func select_fighter(index: int) -> void:
     selected_fighter = index
     enemy_fighter = (index + randi_range(1, 3)) % fighter_names.size()
-    player_name_label.text = fighter_names[selected_fighter]
-    enemy_name_label.text = fighter_names[enemy_fighter]
+    update_health_labels()
     selection_layer.visible = false
     restart_round()
     start_game()
@@ -474,8 +473,12 @@ func start_game() -> void:
     restart_button.visible = round_over
     change_fighter_button.visible = round_over
     result_label.visible = round_over
-    player_name_label.text = fighter_names[selected_fighter]
-    enemy_name_label.text = fighter_names[enemy_fighter]
+    update_health_labels()
+
+# Keep the exact HP visible alongside the colored bars on both platforms.
+func update_health_labels() -> void:
+    player_name_label.text = "%s  •  %d HP" % [fighter_names[selected_fighter], hp_left]
+    enemy_name_label.text = "%s  •  %d HP" % [fighter_names[enemy_fighter], hp_right]
 
 func restart_round() -> void:
     manual_paused = false
@@ -488,6 +491,7 @@ func restart_round() -> void:
         held[key] = false
     hp_left = 100
     hp_right = 100
+    update_health_labels()
     x_left = 300.0
     x_right = 900.0
     y_left = 610.0
@@ -523,6 +527,7 @@ func finish_round(outcome: int) -> void:
     if round_over:
         return
     round_over = true
+    update_health_labels()
     if outcome > 0:
         play_sound("victory")
         player_wins += 1
@@ -736,6 +741,7 @@ func _process(delta: float) -> void:
                 return
     skill_label.text = "ЭНЕРГИЯ %d/100" % int(skill_energy)
     cooldown_label.text = ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
+    update_health_labels()
     queue_redraw()
 
 func _draw() -> void:
