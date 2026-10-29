@@ -71,7 +71,9 @@ var skill_cost := 40.0
 var enemy_energy := 0.0
 var enemy_skill_fx := 0.0
 var skill_label: Label
+var round_duration := 99.0
 var round_seconds := 99.0
+var duration_button: Button
 var timer_warning_active := false
 var has_game_focus := true
 var round_timer_label: Label
@@ -93,6 +95,10 @@ func _ready() -> void:
             selection_choice = clampi(stored_fighter, 0, fighter_names.size() - 1)
         if typeof(stored_costume) == TYPE_INT:
             selected_costume = clampi(stored_costume, 0, costume_names.size() - 1)
+        # Older saves default to the original 99-second round.
+        var saved_duration = saved_settings.get_value("match", "duration", 99)
+        if typeof(saved_duration) == TYPE_INT and saved_duration in [60, 99, 120]:
+            round_duration = float(saved_duration)
     for character in ["yamato", "erza", "alpha", "rias"]:
         fighter_textures.append(load("res://assets/fighters/%s.svg" % character))
     sound_library["swing"] = make_sound(0.13, 220.0, 90.0, 0.14, 0)
@@ -279,6 +285,13 @@ func _ready() -> void:
     sound_button.add_theme_font_size_override("font_size", 22)
     sound_button.pressed.connect(toggle_sound)
     menu_layer.add_child(sound_button)
+    duration_button = Button.new()
+    duration_button.text = "ТАЙМЕР РАУНДА: %d СЕК" % int(round_duration)
+    duration_button.position = Vector2(55, 595)
+    duration_button.size = Vector2(350, 46)
+    duration_button.add_theme_font_size_override("font_size", 19)
+    duration_button.pressed.connect(cycle_round_duration)
+    menu_layer.add_child(duration_button)
     var version_label := Label.new()
     version_label.text = "ECLIPSE ARENA  •  v%s" % str(ProjectSettings.get_setting("application/config/version", "0.6.5"))
     version_label.position = Vector2(65, 650)
@@ -380,6 +393,18 @@ func save_selection_preferences() -> void:
     settings.set_value("selection", "fighter", selection_choice)
     settings.set_value("selection", "costume", selected_costume)
     settings.save("user://settings.cfg")
+
+# Match length is a local preference; changing it affects the next round only.
+func cycle_round_duration() -> void:
+    var durations := [60, 99, 120]
+    var index := durations.find(int(round_duration))
+    round_duration = float(durations[(index + 1) % durations.size()])
+    duration_button.text = "ТАЙМЕР РАУНДА: %d СЕК" % int(round_duration)
+    var settings := ConfigFile.new()
+    settings.load("user://settings.cfg")
+    settings.set_value("match", "duration", int(round_duration))
+    settings.save("user://settings.cfg")
+    play_sound("menu")
 
 func cycle_costume() -> void:
     selected_costume = (selected_costume + 1) % costume_names.size()
@@ -569,8 +594,8 @@ func restart_round() -> void:
     # Reset HUD immediately; never show stale cooldown/combo from last round.
     skill_label.text = "ЭНЕРГИЯ 0/100"
     cooldown_label.text = "ГОТОВО"
-    round_seconds = 99.0
-    round_timer_label.text = "99"
+    round_seconds = round_duration
+    round_timer_label.text = str(int(round_duration))
     timer_warning_active = false
     round_timer_label.add_theme_color_override("font_color", Color.WHITE)
     round_number_label.text = "РАУНД %d" % (player_wins + enemy_wins + draws + 1)
