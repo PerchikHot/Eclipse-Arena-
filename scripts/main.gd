@@ -541,6 +541,7 @@ func show_menu() -> void:
         controls[key].visible = false
     pause_button.visible = false
     pause_toggle_button.visible = false
+    controls_help_button.visible = false
     cooldown_label.visible = false
     skill_label.visible = false
     round_timer_label.visible = false
