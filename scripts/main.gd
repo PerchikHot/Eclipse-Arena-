@@ -221,7 +221,7 @@ func _ready() -> void:
     add_child(pause_overlay)
     # Desktop-only help can be opened during a match or while paused.
     controls_help_label = Label.new()
-    controls_help_label.text = "УПРАВЛЕНИЕ (F1 — скрыть)\nA/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец\nP — пауза  •  M — звук  •  ESC — меню\nПосле раунда: R — заново  •  Q — боец"
+    controls_help_label.text = "УПРАВЛЕНИЕ (кнопка — скрыть)\nДжойстик слева — движение\nПРЫЖОК / УДАР / БЛОК / СПЕЦ — справа\nПАУЗА — остановить бой  •  МЕНЮ — выйти\nПосле раунда: ЗАНОВО или СМЕНИТЬ БОЙЦА" if OS.has_feature("mobile") else "УПРАВЛЕНИЕ (F1 — скрыть)\nA/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец\nP — пауза  •  M — звук  •  ESC — меню\nПосле раунда: R — заново  •  Q — боец"
     controls_help_label.position = Vector2(355, 185)
     controls_help_label.size = Vector2(580, 240)
     controls_help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
