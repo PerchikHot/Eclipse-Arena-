@@ -77,6 +77,10 @@ var round_timer_label: Label
 var round_number_label: Label
 
 func _ready() -> void:
+    # Sound preference is device-local until secure cross-device sync exists.
+    var saved_settings := ConfigFile.new()
+    if saved_settings.load("user://settings.cfg") == OK:
+        sound_muted = saved_settings.get_value("audio", "muted", false) == true
     for character in ["yamato", "erza", "alpha", "rias"]:
         fighter_textures.append(load("res://assets/fighters/%s.svg" % character))
     sound_library["swing"] = make_sound(0.13, 220.0, 90.0, 0.14, 0)
@@ -243,7 +247,7 @@ func _ready() -> void:
     )
     menu_layer.add_child(reset_button)
     sound_button = Button.new()
-    sound_button.text = "ЗВУК: ВКЛ  •  M" if not OS.has_feature("mobile") else "ЗВУК: ВКЛ"
+    sound_button.text = ("ЗВУК: ВЫКЛ" if sound_muted else "ЗВУК: ВКЛ") + ("  •  M" if not OS.has_feature("mobile") else "")
     sound_button.position = Vector2(55, 530)
     sound_button.size = Vector2(350, 60)
     sound_button.add_theme_font_size_override("font_size", 22)
@@ -381,6 +385,11 @@ func make_sound(duration: float, start_hz: float, end_hz: float, volume: float, 
 func toggle_sound() -> void:
     sound_muted = not sound_muted
     sound_button.text = ("ЗВУК: ВЫКЛ" if sound_muted else "ЗВУК: ВКЛ") + ("  •  M" if not OS.has_feature("mobile") else "")
+    # Preserve unrelated settings and avoid resetting the user's preference.
+    var saved_settings := ConfigFile.new()
+    saved_settings.load("user://settings.cfg")
+    saved_settings.set_value("audio", "muted", sound_muted)
+    saved_settings.save("user://settings.cfg")
     if sound_muted:
         for player in audio_players:
             player.stop()
