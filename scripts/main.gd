@@ -563,6 +563,7 @@ func start_game() -> void:
         controls[key].visible = true
     pause_button.visible = true
     pause_toggle_button.visible = true
+    controls_help_button.visible = true
     cooldown_label.visible = true
     skill_label.visible = true
     round_timer_label.visible = true
