@@ -90,6 +90,9 @@ var round_duration := 99.0
 var round_seconds := 99.0
 var duration_button: Button
 var difficulty_button: Button
+var match_button: Button
+var match_target_wins := 2 # 0 = endless rounds
+var match_finished := false
 var timer_warning_active := false
 var final_countdown_active := false
 var has_game_focus := true
@@ -125,6 +128,9 @@ func _ready() -> void:
         var stored_difficulty = saved_settings.get_value("match", "ai_difficulty", 1)
         if typeof(stored_difficulty) == TYPE_INT and stored_difficulty in [0, 1, 2]:
             ai_difficulty = stored_difficulty
+        var stored_match_target = saved_settings.get_value("match", "target_wins", 2)
+        if typeof(stored_match_target) == TYPE_INT and stored_match_target in [0, 2]:
+            match_target_wins = stored_match_target
         # Personal records are local until secure account sync is implemented.
         var stored_best = saved_settings.get_value("records", "best_combo", 0)
         if typeof(stored_best) == TYPE_INT and stored_best >= 0 and stored_best <= 9999:
@@ -365,6 +371,13 @@ func _ready() -> void:
     difficulty_button.add_theme_font_size_override("font_size", 22)
     difficulty_button.pressed.connect(cycle_ai_difficulty)
     menu_layer.add_child(difficulty_button)
+    match_button = Button.new()
+    match_button.text = "МАТЧ: ДО 2 ПОБЕД" if match_target_wins == 2 else "МАТЧ: БЕЗ ЛИМИТА"
+    match_button.position = Vector2(870, 530)
+    match_button.size = Vector2(350, 60)
+    match_button.add_theme_font_size_override("font_size", 20)
+    match_button.pressed.connect(cycle_match_target)
+    menu_layer.add_child(match_button)
     var version_label := Label.new()
     version_label.text = "ECLIPSE ARENA  •  v%s" % str(ProjectSettings.get_setting("application/config/version", "0.6.5"))
     version_label.position = Vector2(65, 650)
@@ -495,6 +508,15 @@ func cycle_ai_difficulty() -> void:
     var settings := ConfigFile.new()
     settings.load("user://settings.cfg")
     settings.set_value("match", "ai_difficulty", ai_difficulty)
+    settings.save("user://settings.cfg")
+    play_sound("menu")
+
+func cycle_match_target() -> void:
+    match_target_wins = 0 if match_target_wins == 2 else 2
+    match_button.text = "МАТЧ: ДО 2 ПОБЕД" if match_target_wins == 2 else "МАТЧ: БЕЗ ЛИМИТА"
+    var settings := ConfigFile.new()
+    settings.load("user://settings.cfg")
+    settings.set_value("match", "target_wins", match_target_wins)
     settings.save("user://settings.cfg")
     play_sound("menu")
 
@@ -712,6 +734,14 @@ func update_accuracy_label() -> void:
 
 
 func restart_round() -> void:
+    # The rematch action starts a fresh score only after a finished match.
+    # Ordinary round restarts retain the score, including drawn rounds.
+    if match_finished:
+        player_wins = 0
+        enemy_wins = 0
+        draws = 0
+        match_finished = false
+        score_label.text = "ИГРОК 0 : 0 ПРОТИВНИК  •  НИЧЬИХ: 0"
     controls_help_label.visible = false
     manual_paused = false
     pause_overlay.visible = false
@@ -816,6 +846,12 @@ func finish_round(outcome: int) -> void:
         record_settings.set_value("records", "best_combo", personal_best_combo)
         record_settings.save("user://settings.cfg")
     score_label.text = "ИГРОК %d : %d ПРОТИВНИК  •  НИЧЬИХ: %d" % [player_wins, enemy_wins, draws]
+    match_finished = match_target_wins > 0 and (player_wins >= match_target_wins or enemy_wins >= match_target_wins)
+    if match_finished:
+        result_label.text = ("МАТЧ ВЫИГРАН!\n" if player_wins >= match_target_wins else "МАТЧ ПРОИГРАН!\n") + result_label.text
+        restart_button.text = "НОВЫЙ МАТЧ" if OS.has_feature("mobile") else "НОВЫЙ МАТЧ (R)"
+    else:
+        restart_button.text = "СЛЕД. РАУНД" if OS.has_feature("mobile") else "СЛЕД. РАУНД (R)"
     result_label.visible = true
     restart_button.visible = true
     change_fighter_button.visible = true
