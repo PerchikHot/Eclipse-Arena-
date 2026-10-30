@@ -890,6 +890,7 @@ func _process(delta: float) -> void:
     if round_seconds <= 10.0 and not timer_warning_active:
         timer_warning_active = true
         round_timer_label.add_theme_color_override("font_color", Color("#ff8b9e"))
+        play_sound("countdown")
     if round_seconds <= 0.0:
         var outcome := 0
         if hp_left > hp_right:
