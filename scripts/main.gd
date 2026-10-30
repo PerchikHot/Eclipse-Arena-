@@ -85,6 +85,7 @@ var round_duration := 99.0
 var round_seconds := 99.0
 var duration_button: Button
 var timer_warning_active := false
+var final_countdown_active := false
 var has_game_focus := true
 var round_timer_label: Label
 var round_number_label: Label
@@ -707,6 +708,7 @@ func restart_round() -> void:
     round_seconds = round_duration
     round_timer_label.text = str(int(round_duration))
     timer_warning_active = false
+    final_countdown_active = false
     round_timer_label.add_theme_color_override("font_color", Color.WHITE)
     round_number_label.text = "РАУНД %d" % (player_wins + enemy_wins + draws + 1)
     round_over = false
@@ -894,6 +896,13 @@ func _process(delta: float) -> void:
     if round_seconds <= 10.0 and not timer_warning_active:
         timer_warning_active = true
         round_timer_label.add_theme_color_override("font_color", Color("#ff8b9e"))
+        # If a long frame skips directly into the last three seconds,
+        # avoid playing two warning sounds in the same frame.
+        if round_seconds > 3.0:
+            play_sound("countdown")
+    if round_seconds <= 3.0 and not final_countdown_active:
+        final_countdown_active = true
+        round_timer_label.add_theme_color_override("font_color", Color("#ff4d6d"))
         play_sound("countdown")
     if round_seconds <= 0.0:
         var outcome := 0
