@@ -657,10 +657,12 @@ func update_accuracy_label() -> void:
     accuracy_label.add_theme_color_override("font_color",
         Color("#ffd47d") if combo_hits > 1 else Color("#80d9ff"))
     if combo_hits > 1:
-        accuracy_label.text += "\nКОМБО x%d" % combo_hits
-    # Blocked hits remain visible even while a combo is active.
+        accuracy_label.text += "\nКОМБО x%d  •  РЕКОРД x%d" % [combo_hits, best_combo]
+    elif best_combo > 1:
+        accuracy_label.text += "\nРЕКОРД КОМБО x%d" % best_combo
+    # Keep stats within two lines even when the current combo has ended.
     if blocked_hits > 0:
-        accuracy_label.text += ("%sБЛОКИ: %d" % ["  •  " if combo_hits > 1 else "\n", blocked_hits])
+        accuracy_label.text += ("%sБЛОКИ: %d" % ["  •  " if combo_hits > 1 or best_combo > 1 else "\n", blocked_hits])
 
 
 func restart_round() -> void:
@@ -940,8 +942,8 @@ func _process(delta: float) -> void:
         if absf(x_left - x_right) < (195.0 if can_skill else 155.0) and absf(y_left - 610.0) < 115.0:
             combo_hits += 1
             hits_landed += 1
-            update_accuracy_label()
             best_combo = maxi(best_combo, combo_hits)
+            update_accuracy_label()
             skill_energy = minf(100.0, skill_energy + (0.0 if can_skill else 11.0))
             combo_timer = 1.3
             var hp_before_hit := hp_right
