@@ -8,6 +8,8 @@ var y_left := 610.0
 var velocity_y := 0.0
 var attack_cooldown := 0.0
 var enemy_cooldown := 0.0
+var enemy_windup := 0.0
+var enemy_pending_special := false
 var left_rig := {}
 var right_rig := {}
 var controls := {}
@@ -728,6 +730,8 @@ func restart_round() -> void:
     velocity_y = 0.0
     attack_cooldown = 0.0
     enemy_cooldown = 0.0
+    enemy_windup = 0.0
+    enemy_pending_special = false
     combo_hits = 0
     best_combo = 0
     damage_dealt = 0
@@ -1041,7 +1045,9 @@ func _process(delta: float) -> void:
         if ai_timer <= 0.0:
             ai_timer = [1.8, 1.1, 0.6][ai_difficulty]
             ai_retreat = distance < 185.0 and randf() < [0.18, 0.35, 0.50][ai_difficulty]
-        if ai_retreat and distance < 240.0:
+        if enemy_windup > 0.0:
+            enemy_motion = 0.0
+        elif ai_retreat and distance < 240.0:
             enemy_motion = -signf(x_left - x_right)
             x_right += enemy_motion * [85.0, 110.0, 145.0][ai_difficulty] * delta
         elif distance > 110.0:
@@ -1053,36 +1059,43 @@ func _process(delta: float) -> void:
             var midpoint: float = (x_left + x_right) * 0.5
             x_left = clampf(midpoint - separation * 42.0, 50.0, 1230.0)
             x_right = clampf(midpoint + separation * 42.0, 50.0, 1230.0)
-        if absf(x_left - x_right) < 140 and absf(y_left - 610.0) < 120.0 and enemy_cooldown <= 0:
-            var enemy_special: bool = enemy_energy >= skill_cost and randf() < 0.55
-            if enemy_special:
+        # Telegraph each attack so the player has time to dodge or block.
+        # Resolve damage only after the windup, not at the first AI decision.
+        if enemy_windup > 0.0:
+            enemy_windup = maxf(0.0, enemy_windup - delta)
+            if enemy_windup <= 0.0:
+                enemy_attack_fx = 0.3 if enemy_pending_special else 0.18
+                play_sound("swing")
+                if absf(x_left - x_right) < 145.0 and absf(y_left - 610.0) < 120.0:
+                    player_hit_fx = 0.22
+                    impact_flash = 0.15
+                    play_sound("hit")
+                    var hp_before_enemy_hit := hp_left
+                    hp_left = maxi(0, hp_left - ((4 if enemy_pending_special else 2) if block_timer > 0.0 else (15 if enemy_pending_special else 7)))
+                    damage_taken += hp_before_enemy_hit - hp_left
+                    hits_received += 1
+                    if block_timer > 0.0:
+                        blocked_hits += 1
+                    combo_hits = 0
+                    combo_timer = 0.0
+                    update_accuracy_label()
+                    enemy_energy = minf(100.0, enemy_energy + (0.0 if enemy_pending_special else 9.0))
+                    skill_energy = minf(100.0, skill_energy + 4.0)
+                    if hp_left == 0:
+                        finish_round(-1)
+                        return
+                enemy_pending_special = false
+        elif absf(x_left - x_right) < 140.0 and absf(y_left - 610.0) < 120.0 and enemy_cooldown <= 0.0:
+            enemy_pending_special = enemy_energy >= skill_cost and randf() < 0.55
+            if enemy_pending_special:
                 enemy_energy -= skill_cost
-                enemy_skill_fx = 0.35
-            enemy_cooldown = (1.3 if enemy_special else 0.95) * [1.35, 1.0, 0.78][ai_difficulty]
-            enemy_attack_fx = 0.3 if enemy_special else 0.18
-            play_sound("swing")
-            player_hit_fx = 0.22
-            impact_flash = 0.15
-            play_sound("hit")
-            var hp_before_enemy_hit := hp_left
-            hp_left = maxi(0, hp_left - ((4 if enemy_special else 2) if block_timer > 0.0 else (15 if enemy_special else 7)))
-            damage_taken += hp_before_enemy_hit - hp_left
-            hits_received += 1
-            if block_timer > 0.0:
-                blocked_hits += 1
-            # Taking damage interrupts the current combo; best combo stays in the round summary.
-            combo_hits = 0
-            combo_timer = 0.0
-            update_accuracy_label()
-            enemy_energy = minf(100.0, enemy_energy + (0.0 if enemy_special else 9.0))
-            skill_energy = minf(100.0, skill_energy + 4.0)
-            if hp_left == 0:
-                finish_round(-1)
-                return
+            # Novice is easier to read, master reacts faster.
+            enemy_windup = [0.65, 0.45, 0.30][ai_difficulty]
+            enemy_cooldown = (1.3 if enemy_pending_special else 0.95) * [1.35, 1.0, 0.78][ai_difficulty]
     # Communicate when the special attack is usable and when blocking is active.
     skill_label.text = ("СПЕЦ ГОТОВ %d/100" if skill_energy >= skill_cost else "ЭНЕРГИЯ %d/100") % int(skill_energy)
     update_enemy_energy_label()
-    cooldown_label.text = ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
+    cooldown_label.text = ("⚠ ВРАГ ГОТОВИТ УДАР!  " if enemy_windup > 0.0 else "") + ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
     update_health_labels()
     queue_redraw()
 
@@ -1100,6 +1113,10 @@ func _draw() -> void:
         draw_circle(joystick_center + Vector2(joystick_axis * 43.0, 0), 32.0, Color("#9788c2", 0.9))
     draw_sprite_fighter(Vector2(x_left, y_left), selected_fighter, x_right >= x_left, player_motion, player_attack_fx, player_hit_fx, hp_left)
     draw_sprite_fighter(Vector2(x_right, 610), enemy_fighter, x_left >= x_right, enemy_motion, enemy_attack_fx, enemy_hit_fx, hp_right)
+    if enemy_windup > 0.0:
+        # Red windup ring is a visual dodge/block cue on touch and keyboard.
+        draw_arc(Vector2(x_right, 485), 88.0, 0.0, TAU, 48,
+            Color("#ff6a80", 0.85), 5.0)
     if enemy_skill_fx > 0.0:
         draw_arc(Vector2(x_right, 480), 115.0 + 25.0 * enemy_skill_fx, 0.0, TAU, 56, Color("#ff9f75", enemy_skill_fx * 2.0), 8.0)
     if enemy_hit_fx > 0.0:
