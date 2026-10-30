@@ -68,6 +68,7 @@ var joystick_touch := -1
 var combo_hits := 0
 var best_combo := 0
 var personal_best_combo := 0
+var personal_record_label: Label
 var damage_dealt := 0
 var damage_taken := 0
 var hits_landed := 0
@@ -405,6 +406,13 @@ func _ready() -> void:
     confirm_button.add_theme_font_size_override("font_size", 25)
     confirm_button.pressed.connect(func() -> void: select_fighter(selection_choice))
     selection_layer.add_child(confirm_button)
+    # Show the saved record before a match, on Windows and Android.
+    personal_record_label = Label.new()
+    personal_record_label.position = Vector2(930, 550)
+    personal_record_label.size = Vector2(270, 50)
+    personal_record_label.add_theme_font_size_override("font_size", 18)
+    personal_record_label.add_theme_color_override("font_color", Color("#80d9ff"))
+    selection_layer.add_child(personal_record_label)
     var selection_hint := Label.new()
     selection_hint.text = "ВЫБЕРИ ГЕРОИНЮ — ПРОТИВНИК БУДЕТ ВЫБРАН АВТОМАТИЧЕСКИ"
     selection_hint.position = Vector2(95, 150)
@@ -427,6 +435,7 @@ func _ready() -> void:
     show_menu()
 
 func show_selection() -> void:
+    personal_record_label.text = "ЛИЧНЫЙ РЕКОРД КОМБО: x%d" % personal_best_combo
     play_sound("menu")
     in_menu = true
     menu_layer.visible = false
