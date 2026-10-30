@@ -93,6 +93,8 @@ var difficulty_button: Button
 var match_button: Button
 var match_target_wins := 2 # 0 = endless rounds
 var match_finished := false
+var training_mode := false
+var training_knockouts := 0
 var timer_warning_active := false
 var final_countdown_active := false
 var has_game_focus := true
@@ -335,8 +337,23 @@ func _ready() -> void:
     start_button.position = Vector2(55, 335)
     start_button.size = Vector2(350, 75)
     start_button.add_theme_font_size_override("font_size", 29)
-    start_button.pressed.connect(show_selection)
+    start_button.pressed.connect(func() -> void:
+        training_mode = false
+        show_selection()
+    )
     menu_layer.add_child(start_button)
+    # Practice with a stationary, respawning dummy and no round timer.
+    # It cannot improve the ranked personal combo record.
+    var training_button := Button.new()
+    training_button.text = "ТРЕНИРОВКА • БЕЗ ТАЙМЕРА"
+    training_button.position = Vector2(470, 430)
+    training_button.size = Vector2(390, 75)
+    training_button.add_theme_font_size_override("font_size", 22)
+    training_button.pressed.connect(func() -> void:
+        training_mode = true
+        show_selection()
+    )
+    menu_layer.add_child(training_button)
     var reset_button := Button.new()
     reset_button.text = "НОВЫЙ БОЙ"
     reset_button.position = Vector2(55, 430)
@@ -537,7 +554,8 @@ func select_fighter(index: int) -> void:
     player_wins = 0
     enemy_wins = 0
     draws = 0
-    score_label.text = "ИГРОК 0 : 0 ПРОТИВНИК  •  НИЧЬИХ: 0"
+    training_knockouts = 0
+    score_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: 0" if training_mode else "ИГРОК 0 : 0 ПРОТИВНИК  •  НИЧЬИХ: 0"
     update_health_labels()
     selection_layer.visible = false
     restart_round()
@@ -781,11 +799,11 @@ func restart_round() -> void:
     update_enemy_energy_label()
     cooldown_label.text = "ГОТОВО"
     round_seconds = round_duration
-    round_timer_label.text = str(int(round_duration))
+    round_timer_label.text = "∞" if training_mode else str(int(round_duration))
     timer_warning_active = false
     final_countdown_active = false
     round_timer_label.add_theme_color_override("font_color", Color.WHITE)
-    round_number_label.text = "РАУНД %d" % (player_wins + enemy_wins + draws + 1)
+    round_number_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: %d" % training_knockouts if training_mode else "РАУНД %d" % (player_wins + enemy_wins + draws + 1)
     round_over = false
     sync_pause_overlay()
     player_attack_fx = 0.0
@@ -988,33 +1006,36 @@ func _process(delta: float) -> void:
     if round_over or in_menu or manual_paused or controls_help_label.visible or not has_game_focus:
         return
     animation_clock += delta
-    round_seconds = maxf(0.0, round_seconds - delta)
-    # A text marker supplements the red final countdown for color-blind
-    # players and low-contrast mobile displays. Reset happens each round.
-    if round_seconds <= 3.0:
-        round_timer_label.text = "! %d !" % ceili(round_seconds)
-    else:
-        round_timer_label.text = str(ceili(round_seconds))
-    # Make the last ten seconds unmistakable without changing the timer rules.
-    if round_seconds <= 10.0 and not timer_warning_active:
-        timer_warning_active = true
-        round_timer_label.add_theme_color_override("font_color", Color("#ff8b9e"))
-        # If a long frame skips directly into the last three seconds,
-        # avoid playing two warning sounds in the same frame.
-        if round_seconds > 3.0:
+    if not training_mode:
+        round_seconds = maxf(0.0, round_seconds - delta)
+        # A text marker supplements the red final countdown for color-blind
+        # players and low-contrast mobile displays. Reset happens each round.
+        if round_seconds <= 3.0:
+            round_timer_label.text = "! %d !" % ceili(round_seconds)
+        else:
+            round_timer_label.text = str(ceili(round_seconds))
+        # Make the last ten seconds unmistakable without changing the timer rules.
+        if round_seconds <= 10.0 and not timer_warning_active:
+            timer_warning_active = true
+            round_timer_label.add_theme_color_override("font_color", Color("#ff8b9e"))
+            # If a long frame skips directly into the last three seconds,
+            # avoid playing two warning sounds in the same frame.
+            if round_seconds > 3.0:
+                play_sound("countdown")
+        if round_seconds <= 3.0 and not final_countdown_active:
+            final_countdown_active = true
+            round_timer_label.add_theme_color_override("font_color", Color("#ff4d6d"))
             play_sound("countdown")
-    if round_seconds <= 3.0 and not final_countdown_active:
-        final_countdown_active = true
-        round_timer_label.add_theme_color_override("font_color", Color("#ff4d6d"))
-        play_sound("countdown")
-    if round_seconds <= 0.0:
-        var outcome := 0
-        if hp_left > hp_right:
-            outcome = 1
-        elif hp_left < hp_right:
-            outcome = -1
-        finish_round(outcome)
-        return
+        if round_seconds <= 0.0:
+            var outcome := 0
+            if hp_left > hp_right:
+                outcome = 1
+            elif hp_left < hp_right:
+                outcome = -1
+            finish_round(outcome)
+            return
+    else:
+        round_timer_label.text = "∞"
     impact_flash = maxf(0.0, impact_flash - delta)
     combo_timer = maxf(0.0, combo_timer - delta)
     block_timer = maxf(0.0, block_timer - delta)
@@ -1062,7 +1083,8 @@ func _process(delta: float) -> void:
             combo_hits += 1
             hits_landed += 1
             best_combo = maxi(best_combo, combo_hits)
-            personal_best_combo = maxi(personal_best_combo, combo_hits)
+            if not training_mode:
+                personal_best_combo = maxi(personal_best_combo, combo_hits)
             update_accuracy_label()
             skill_energy = minf(100.0, skill_energy + (0.0 if can_skill else 11.0))
             combo_timer = 1.3
@@ -1074,9 +1096,16 @@ func _process(delta: float) -> void:
             impact_flash = 0.15
             play_sound("hit")
             if hp_right == 0:
-                finish_round(1)
-                return
-    if hp_left > 0 and hp_right > 0:
+                if training_mode:
+                    training_knockouts += 1
+                    hp_right = 100
+                    enemy_energy = 0.0
+                    round_number_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: %d" % training_knockouts
+                    score_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: %d" % training_knockouts
+                else:
+                    finish_round(1)
+                    return
+    if not training_mode and hp_left > 0 and hp_right > 0:
         var distance: float = absf(x_left - x_right)
         if ai_timer <= 0.0:
             ai_timer = [1.8, 1.1, 0.6][ai_difficulty]
