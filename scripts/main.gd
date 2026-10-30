@@ -26,6 +26,7 @@ var player_hit_fx := 0.0
 var enemy_hit_fx := 0.0
 var ai_timer := 0.0
 var ai_retreat := false
+var ai_difficulty := 1  # 0: novice, 1: normal, 2: master
 var animation_clock := 0.0
 var player_motion := 0.0
 var enemy_motion := 0.0
@@ -86,6 +87,7 @@ var enemy_energy_label: Label
 var round_duration := 99.0
 var round_seconds := 99.0
 var duration_button: Button
+var difficulty_button: Button
 var timer_warning_active := false
 var final_countdown_active := false
 var has_game_focus := true
@@ -117,6 +119,10 @@ func _ready() -> void:
         var saved_duration = saved_settings.get_value("match", "duration", 99)
         if typeof(saved_duration) == TYPE_INT and saved_duration in [30, 60, 99, 120, 180]:
             round_duration = float(saved_duration)
+        # The AI level is local to this device and does not alter save data.
+        var stored_difficulty = saved_settings.get_value("match", "ai_difficulty", 1)
+        if typeof(stored_difficulty) == TYPE_INT and stored_difficulty in [0, 1, 2]:
+            ai_difficulty = stored_difficulty
         # Personal records are local until secure account sync is implemented.
         var stored_best = saved_settings.get_value("records", "best_combo", 0)
         if typeof(stored_best) == TYPE_INT and stored_best >= 0 and stored_best <= 9999:
@@ -350,6 +356,13 @@ func _ready() -> void:
     duration_button.add_theme_font_size_override("font_size", 19)
     duration_button.pressed.connect(cycle_round_duration)
     menu_layer.add_child(duration_button)
+    difficulty_button = Button.new()
+    difficulty_button.text = "СЛОЖНОСТЬ ИИ: " + ["НОВИЧОК", "СТАНДАРТ", "МАСТЕР"][ai_difficulty]
+    difficulty_button.position = Vector2(470, 530)
+    difficulty_button.size = Vector2(390, 60)
+    difficulty_button.add_theme_font_size_override("font_size", 22)
+    difficulty_button.pressed.connect(cycle_ai_difficulty)
+    menu_layer.add_child(difficulty_button)
     var version_label := Label.new()
     version_label.text = "ECLIPSE ARENA  •  v%s" % str(ProjectSettings.get_setting("application/config/version", "0.6.5"))
     version_label.position = Vector2(65, 650)
@@ -469,6 +482,17 @@ func cycle_round_duration() -> void:
     var settings := ConfigFile.new()
     settings.load("user://settings.cfg")
     settings.set_value("match", "duration", int(round_duration))
+    settings.save("user://settings.cfg")
+    play_sound("menu")
+
+# A full gameplay setting: opponent movement, decisions and attack recovery
+# scale together. Changes apply to the next frame and persist across restarts.
+func cycle_ai_difficulty() -> void:
+    ai_difficulty = (ai_difficulty + 1) % 3
+    difficulty_button.text = "СЛОЖНОСТЬ ИИ: " + ["НОВИЧОК", "СТАНДАРТ", "МАСТЕР"][ai_difficulty]
+    var settings := ConfigFile.new()
+    settings.load("user://settings.cfg")
+    settings.set_value("match", "ai_difficulty", ai_difficulty)
     settings.save("user://settings.cfg")
     play_sound("menu")
 
@@ -1015,14 +1039,14 @@ func _process(delta: float) -> void:
     if hp_left > 0 and hp_right > 0:
         var distance: float = absf(x_left - x_right)
         if ai_timer <= 0.0:
-            ai_timer = 1.1
-            ai_retreat = distance < 185.0 and randf() < 0.35
+            ai_timer = [1.8, 1.1, 0.6][ai_difficulty]
+            ai_retreat = distance < 185.0 and randf() < [0.18, 0.35, 0.50][ai_difficulty]
         if ai_retreat and distance < 240.0:
             enemy_motion = -signf(x_left - x_right)
-            x_right += enemy_motion * 110.0 * delta
+            x_right += enemy_motion * [85.0, 110.0, 145.0][ai_difficulty] * delta
         elif distance > 110.0:
             enemy_motion = signf(x_left - x_right)
-            x_right += enemy_motion * 170.0 * delta
+            x_right += enemy_motion * [125.0, 170.0, 210.0][ai_difficulty] * delta
         x_right = clampf(x_right, 50.0, 1230.0)
         if absf(x_left - x_right) < 84.0 and absf(y_left - 610.0) < 115.0:
             var separation: float = 1.0 if x_left <= x_right else -1.0
@@ -1034,7 +1058,7 @@ func _process(delta: float) -> void:
             if enemy_special:
                 enemy_energy -= skill_cost
                 enemy_skill_fx = 0.35
-            enemy_cooldown = 1.3 if enemy_special else 0.95
+            enemy_cooldown = (1.3 if enemy_special else 0.95) * [1.35, 1.0, 0.78][ai_difficulty]
             enemy_attack_fx = 0.3 if enemy_special else 0.18
             play_sound("swing")
             player_hit_fx = 0.22
