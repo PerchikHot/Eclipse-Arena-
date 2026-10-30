@@ -188,7 +188,10 @@ func _ready() -> void:
     dash_button.text = "РЫВОК" if OS.has_feature("mobile") else "РЫВОК (SHIFT)"
     dash_button.position = Vector2(785, 540)
     dash_button.size = Vector2(115, 68)
-    dash_button.pressed.connect(func(): dash_queued = true)
+    dash_button.pressed.connect(func() -> void:
+        if not in_menu and not manual_paused and not round_over:
+            dash_queued = true
+    )
     add_child(dash_button)
     player_name_label = Label.new()
     player_name_label.position = Vector2(55, 10)
