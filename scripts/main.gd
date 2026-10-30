@@ -119,6 +119,8 @@ func _ready() -> void:
     sound_library["victory"] = make_sound(0.55, 420.0, 840.0, 0.15, 0)
     sound_library["defeat"] = make_sound(0.48, 320.0, 90.0, 0.15, 0)
     sound_library["menu"] = make_sound(0.11, 470.0, 720.0, 0.11, 0)
+    # One brief warning at ten seconds; respects the saved mute setting.
+    sound_library["countdown"] = make_sound(0.12, 750.0, 520.0, 0.12, 0)
     for i in range(6):
         var audio := AudioStreamPlayer.new()
         audio.volume_db = -7.0
