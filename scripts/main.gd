@@ -742,11 +742,12 @@ func finish_round(outcome: int) -> void:
     result_label.text += "\nУРОН: %d нанесено / %d получено" % [damage_dealt, damage_taken]
     result_label.text += "\nПОПАДАНИЯ: %d / %d  •  БЛОК: %d" % [hits_landed, hits_received, blocked_hits]
     # Accuracy is based on actual attacks, not key presses during cooldown.
-    # A round with zero attacks is shown as 0%, never a division by zero.
-    var accuracy := 0
-    if attacks_attempted > 0:
-        accuracy = roundi(float(hits_landed) * 100.0 / float(attacks_attempted))
-    result_label.text += "\nТОЧНОСТЬ: %d%% (%d из %d)" % [accuracy, hits_landed, attacks_attempted]
+    # No attacks means no accuracy measurement, not a 0% miss rate.
+    if attacks_attempted == 0:
+        result_label.text += "\nТОЧНОСТЬ: — (нет атак)"
+    else:
+        var accuracy := roundi(float(hits_landed) * 100.0 / float(attacks_attempted))
+        result_label.text += "\nТОЧНОСТЬ: %d%% (%d из %d)" % [accuracy, hits_landed, attacks_attempted]
     if best_combo > 1:
         result_label.text += "\nЛУЧШЕЕ КОМБО: %d" % best_combo
     score_label.text = "ИГРОК %d : %d ПРОТИВНИК  •  НИЧЬИХ: %d" % [player_wins, enemy_wins, draws]
