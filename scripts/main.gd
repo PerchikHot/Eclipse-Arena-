@@ -83,6 +83,11 @@ var block_timer := 0.0
 # Guard cannot be held indefinitely: it must recover after exhaustion.
 var guard_stamina := 100.0
 var guard_exhausted := false
+# A timed evasive dash uses guard stamina; it cannot be spammed while held.
+var dash_cooldown := 0.0
+var dash_invulnerable := 0.0
+var dash_queued := false
+var dash_button: Button
 var skill_energy := 0.0
 var skill_cost := 40.0
 var enemy_energy := 0.0
@@ -179,6 +184,12 @@ func _ready() -> void:
         held[label] = false
         button.button_down.connect(func(): held[label] = true)
         button.button_up.connect(func(): held[label] = false)
+    dash_button = Button.new()
+    dash_button.text = "РЫВОК" if OS.has_feature("mobile") else "РЫВОК (SHIFT)"
+    dash_button.position = Vector2(785, 540)
+    dash_button.size = Vector2(115, 68)
+    dash_button.pressed.connect(func(): dash_queued = true)
+    add_child(dash_button)
     player_name_label = Label.new()
     player_name_label.position = Vector2(55, 10)
     player_name_label.add_theme_font_size_override("font_size", 20)
@@ -291,7 +302,7 @@ func _ready() -> void:
     add_child(pause_overlay)
     # Desktop-only help can be opened during a match or while paused.
     controls_help_label = Label.new()
-    controls_help_label.text = "УПРАВЛЕНИЕ (кнопка — скрыть)\nБой на паузе, пока открыта помощь\nДжойстик слева — движение\nПРЫЖОК / УДАР / БЛОК / СПЕЦ — справа\nПАУЗА — остановить бой  •  МЕНЮ — выйти\nПосле раунда: ЗАНОВО или СМЕНИТЬ БОЙЦА" if OS.has_feature("mobile") else "УПРАВЛЕНИЕ (F1 — скрыть)\nБой на паузе, пока открыта помощь\nA/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец\nP — пауза  •  M — звук  •  F3 — FPS  •  ESC — закрыть помощь\nПосле раунда: R — заново  •  Q — боец"
+    controls_help_label.text = "УПРАВЛЕНИЕ (кнопка — скрыть)\nБой на паузе, пока открыта помощь\nДжойстик слева — движение\nПРЫЖОК / УДАР / БЛОК / СПЕЦ — справа\nРЫВОК — уклонение (30 щита)  •  ПАУЗА — остановить бой  •  МЕНЮ — выйти\nПосле раунда: ЗАНОВО или СМЕНИТЬ БОЙЦА" if OS.has_feature("mobile") else "УПРАВЛЕНИЕ (F1 — скрыть)\nБой на паузе, пока открыта помощь\nA/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец\nSHIFT — рывок  •  P — пауза  •  M — звук  •  F3 — FPS  •  ESC — помощь\nПосле раунда: R — заново  •  Q — боец"
     controls_help_label.position = Vector2(355, 185)
     controls_help_label.size = Vector2(580, 240)
     controls_help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -670,6 +681,7 @@ func show_menu() -> void:
     # the arena cannot trigger a stuck attack, block, or movement.
     joystick_touch = -1
     joystick_axis = 0.0
+    dash_queued = false
     for key in held.keys():
         held[key] = false
     menu_layer.visible = true
@@ -677,6 +689,7 @@ func show_menu() -> void:
     for key in controls.keys():
         controls[key].visible = false
     pause_button.visible = false
+    dash_button.visible = false
     pause_toggle_button.visible = false
     controls_help_button.visible = false
     cooldown_label.visible = false
@@ -700,6 +713,7 @@ func start_game() -> void:
     for key in controls.keys():
         controls[key].visible = true
     pause_button.visible = true
+    dash_button.visible = true
     pause_toggle_button.visible = true
     controls_help_button.visible = true
     cooldown_label.visible = true
@@ -796,6 +810,9 @@ func restart_round() -> void:
     block_timer = 0.0
     guard_stamina = 100.0
     guard_exhausted = false
+    dash_cooldown = 0.0
+    dash_invulnerable = 0.0
+    dash_queued = false
     skill_energy = 0.0
     enemy_energy = 0.0
     enemy_skill_fx = 0.0
@@ -950,6 +967,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
         return
     if in_menu:
         return
+    if event.keycode == KEY_SHIFT and not manual_paused and not round_over:
+        dash_queued = true
+        get_viewport().set_input_as_handled()
+        return
     if event.keycode == KEY_P:
         toggle_pause()
         get_viewport().set_input_as_handled()
@@ -1056,6 +1077,8 @@ func _process(delta: float) -> void:
     enemy_hit_fx = maxf(0.0, enemy_hit_fx - delta)
     ai_timer -= delta
     attack_cooldown = maxf(0, attack_cooldown - delta)
+    dash_cooldown = maxf(0.0, dash_cooldown - delta)
+    dash_invulnerable = maxf(0.0, dash_invulnerable - delta)
     enemy_cooldown = maxf(0, enemy_cooldown - delta)
     var left_pressed: bool = Input.is_key_pressed(KEY_A) or joystick_axis < -0.2
     var right_pressed: bool = Input.is_key_pressed(KEY_D) or joystick_axis > 0.2
@@ -1078,6 +1101,17 @@ func _process(delta: float) -> void:
     else:
         block_timer = 0.0
     x_left += player_motion * 330 * delta
+    if dash_queued:
+        dash_queued = false
+        if dash_cooldown <= 0.0 and guard_stamina >= 30.0 and not guard_exhausted:
+            var dash_direction := signf(player_motion)
+            if dash_direction == 0.0:
+                dash_direction = 1.0 if x_left <= x_right else -1.0
+            x_left += dash_direction * 145.0
+            guard_stamina -= 30.0
+            dash_cooldown = 1.8
+            dash_invulnerable = 0.22
+            play_sound("jump")
     x_left = clampf(x_left, 50, 1230)
     if jump_pressed and y_left >= 610:
         velocity_y = -740
@@ -1148,7 +1182,7 @@ func _process(delta: float) -> void:
             if enemy_windup <= 0.0:
                 enemy_attack_fx = 0.3 if enemy_pending_special else 0.18
                 play_sound("swing")
-                if absf(x_left - x_right) < 145.0 and absf(y_left - 610.0) < 120.0:
+                if dash_invulnerable <= 0.0 and absf(x_left - x_right) < 145.0 and absf(y_left - 610.0) < 120.0:
                     player_hit_fx = 0.22
                     impact_flash = 0.15
                     play_sound("hit")
@@ -1177,7 +1211,7 @@ func _process(delta: float) -> void:
     # Communicate when the special attack is usable and when blocking is active.
     skill_label.text = ("СПЕЦ ГОТОВ %d/100" if skill_energy >= skill_cost else "ЭНЕРГИЯ %d/100") % int(skill_energy)
     update_enemy_energy_label()
-    cooldown_label.text = ("⚠ ВРАГ ГОТОВИТ УДАР!  " if enemy_windup > 0.0 else "") + ("ЩИТ ИСТОЩЕН • " if guard_exhausted else "ЩИТ %d/100 • " % int(guard_stamina)) + ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
+    cooldown_label.text = ("РЫВОК %.1fс • " % dash_cooldown if dash_cooldown > 0.0 else "РЫВОК ГОТОВ • ") + ("⚠ ВРАГ ГОТОВИТ УДАР!  " if enemy_windup > 0.0 else "") + ("ЩИТ ИСТОЩЕН • " if guard_exhausted else "ЩИТ %d/100 • " % int(guard_stamina)) + ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
     update_health_labels()
     queue_redraw()
 
@@ -1195,6 +1229,9 @@ func _draw() -> void:
         draw_circle(joystick_center + Vector2(joystick_axis * 43.0, 0), 32.0, Color("#9788c2", 0.9))
     draw_sprite_fighter(Vector2(x_left, y_left), selected_fighter, x_right >= x_left, player_motion, player_attack_fx, player_hit_fx, hp_left)
     draw_sprite_fighter(Vector2(x_right, 610), enemy_fighter, x_left >= x_right, enemy_motion, enemy_attack_fx, enemy_hit_fx, hp_right)
+    if dash_invulnerable > 0.0:
+        draw_arc(Vector2(x_left, y_left - 115.0), 85.0, 0.0, TAU, 40,
+            Color("#5be7ff", 0.85), 6.0)
     if enemy_windup > 0.0:
         # Red windup ring is a visual dodge/block cue on touch and keyboard.
         draw_arc(Vector2(x_right, 485), 88.0, 0.0, TAU, 48,
