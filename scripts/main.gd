@@ -655,7 +655,8 @@ func update_accuracy_label() -> void:
         Color("#ffd47d") if combo_hits > 1 else Color("#80d9ff"))
     if combo_hits > 1:
         accuracy_label.text += "  •  КОМБО x%d" % combo_hits
-    elif blocked_hits > 0:
+    # Blocked hits remain visible even while a combo is active.
+    if blocked_hits > 0:
         accuracy_label.text += "  •  БЛОКИ: %d" % blocked_hits
 
 
