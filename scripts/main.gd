@@ -220,8 +220,8 @@ func _ready() -> void:
     add_child(cooldown_label)
     # Live accuracy feedback during the round, not only on the result screen.
     accuracy_label = Label.new()
-    accuracy_label.position = Vector2(520, 688)
-    accuracy_label.size = Vector2(360, 25)
+    accuracy_label.position = Vector2(430, 688)
+    accuracy_label.size = Vector2(540, 25)
     accuracy_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     accuracy_label.add_theme_font_size_override("font_size", 16)
     accuracy_label.add_theme_color_override("font_color", Color("#80d9ff"))
@@ -647,6 +647,8 @@ func update_accuracy_label() -> void:
     if attacks_attempted > 0:
         accuracy = roundi(float(hits_landed) * 100.0 / float(attacks_attempted))
     accuracy_label.text = "ТОЧНОСТЬ: %d/%d (%d%%)" % [hits_landed, attacks_attempted, accuracy]
+    if combo_hits > 1:
+        accuracy_label.text += "  •  КОМБО x%d" % combo_hits
 
 
 func restart_round() -> void:
@@ -882,8 +884,9 @@ func _process(delta: float) -> void:
     impact_flash = maxf(0.0, impact_flash - delta)
     combo_timer = maxf(0.0, combo_timer - delta)
     block_timer = maxf(0.0, block_timer - delta)
-    if combo_timer <= 0.0:
+    if combo_timer <= 0.0 and combo_hits != 0:
         combo_hits = 0
+        update_accuracy_label()
     player_motion = 0.0
     enemy_motion = 0.0
     player_attack_fx = maxf(0.0, player_attack_fx - delta)
