@@ -891,7 +891,12 @@ func _process(delta: float) -> void:
         return
     animation_clock += delta
     round_seconds = maxf(0.0, round_seconds - delta)
-    round_timer_label.text = str(ceili(round_seconds))
+    # A text marker supplements the red final countdown for color-blind
+    # players and low-contrast mobile displays. Reset happens each round.
+    if round_seconds <= 3.0:
+        round_timer_label.text = "! %d !" % ceili(round_seconds)
+    else:
+        round_timer_label.text = str(ceili(round_seconds))
     # Make the last ten seconds unmistakable without changing the timer rules.
     if round_seconds <= 10.0 and not timer_warning_active:
         timer_warning_active = true
