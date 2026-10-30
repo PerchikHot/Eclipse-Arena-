@@ -80,6 +80,9 @@ var hits_received := 0
 var blocked_hits := 0
 var combo_timer := 0.0
 var block_timer := 0.0
+# Guard cannot be held indefinitely: it must recover after exhaustion.
+var guard_stamina := 100.0
+var guard_exhausted := false
 var skill_energy := 0.0
 var skill_cost := 40.0
 var enemy_energy := 0.0
@@ -791,6 +794,8 @@ func restart_round() -> void:
     update_accuracy_label()
     combo_timer = 0.0
     block_timer = 0.0
+    guard_stamina = 100.0
+    guard_exhausted = false
     skill_energy = 0.0
     enemy_energy = 0.0
     enemy_skill_fx = 0.0
@@ -1057,9 +1062,21 @@ func _process(delta: float) -> void:
     var jump_pressed: bool = Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_W) or held["JUMP"]
     var hit_pressed: bool = Input.is_key_pressed(KEY_J) or held["HIT"]
     player_motion = joystick_axis if absf(joystick_axis) > 0.2 else float(right_pressed) - float(left_pressed)
-    if held["BLOCK"] or Input.is_key_pressed(KEY_K):
-        block_timer = 0.15
-        player_motion *= 0.35
+    var guard_requested: bool = held["BLOCK"] or Input.is_key_pressed(KEY_K)
+    if guard_requested and not guard_exhausted:
+        guard_stamina = maxf(0.0, guard_stamina - 24.0 * delta)
+        if guard_stamina <= 0.0:
+            guard_exhausted = true
+            block_timer = 0.0
+        else:
+            block_timer = 0.15
+            player_motion *= 0.35
+    elif not guard_requested:
+        guard_stamina = minf(100.0, guard_stamina + 20.0 * delta)
+        if guard_exhausted and guard_stamina >= 35.0:
+            guard_exhausted = false
+    else:
+        block_timer = 0.0
     x_left += player_motion * 330 * delta
     x_left = clampf(x_left, 50, 1230)
     if jump_pressed and y_left >= 610:
@@ -1160,7 +1177,7 @@ func _process(delta: float) -> void:
     # Communicate when the special attack is usable and when blocking is active.
     skill_label.text = ("СПЕЦ ГОТОВ %d/100" if skill_energy >= skill_cost else "ЭНЕРГИЯ %d/100") % int(skill_energy)
     update_enemy_energy_label()
-    cooldown_label.text = ("⚠ ВРАГ ГОТОВИТ УДАР!  " if enemy_windup > 0.0 else "") + ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
+    cooldown_label.text = ("⚠ ВРАГ ГОТОВИТ УДАР!  " if enemy_windup > 0.0 else "") + ("ЩИТ ИСТОЩЕН • " if guard_exhausted else "ЩИТ %d/100 • " % int(guard_stamina)) + ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
     update_health_labels()
     queue_redraw()
 
@@ -1202,6 +1219,10 @@ func _draw() -> void:
     draw_rect(Rect2(35, 78, 460, 14), Color("#29253f"))
     draw_rect(Rect2(785, 78, 460, 14), Color("#29253f"))
     draw_rect(Rect2(40, 81, skill_energy * 4.5, 8), Color("#b49aff"))
+    # Separate guard bar: releasing block restores stamina, holding drains it.
+    draw_rect(Rect2(35, 104, 460, 8), Color("#29253f"))
+    draw_rect(Rect2(40, 106, guard_stamina * 4.5, 4),
+        Color("#ff737e") if guard_exhausted else Color("#71d7ff"))
     draw_rect(Rect2(1240 - enemy_energy * 4.5, 81, enemy_energy * 4.5, 8), Color("#ffb184"))
     draw_line(Vector2(35, 100), Vector2(495, 100), Color("#8173b0"), 2)
     draw_line(Vector2(785, 100), Vector2(1245, 100), Color("#8173b0"), 2)
