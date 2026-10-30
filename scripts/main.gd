@@ -91,6 +91,7 @@ var round_timer_label: Label
 var round_number_label: Label
 var fps_label: Label
 var fps_elapsed := 0.0
+var fps_enabled := false
 
 func _ready() -> void:
     # Sound preference is device-local until secure cross-device sync exists.
@@ -98,8 +99,10 @@ func _ready() -> void:
     if saved_settings.load("user://settings.cfg") == OK:
         sound_muted = saved_settings.get_value("audio", "muted", false) == true
         # Restore the desktop display choice; Android keeps its own layout.
-        if not OS.has_feature("mobile") and saved_settings.get_value("display", "fullscreen", false) == true:
-            DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+        if not OS.has_feature("mobile"):
+            if saved_settings.get_value("display", "fullscreen", false) == true:
+                DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+            fps_enabled = saved_settings.get_value("display", "show_fps", false) == true
         # Restore selection only when the stored values are valid integers.
         # Corrupted or older settings must not index outside the fighter list.
         var stored_fighter = saved_settings.get_value("selection", "fighter", 0)
@@ -181,7 +184,7 @@ func _ready() -> void:
     fps_label.position = Vector2(1110, 94)
     fps_label.add_theme_font_size_override("font_size", 18)
     fps_label.add_theme_color_override("font_color", Color("#58c9ff"))
-    fps_label.visible = false
+    fps_label.visible = fps_enabled and not OS.has_feature("mobile")
     add_child(fps_label)
     result_label = Label.new()
     result_label.position = Vector2(500, 280)
@@ -263,7 +266,7 @@ func _ready() -> void:
     add_child(pause_overlay)
     # Desktop-only help can be opened during a match or while paused.
     controls_help_label = Label.new()
-    controls_help_label.text = "УПРАВЛЕНИЕ (кнопка — скрыть)\nБой на паузе, пока открыта помощь\nДжойстик слева — движение\nПРЫЖОК / УДАР / БЛОК / СПЕЦ — справа\nПАУЗА — остановить бой  •  МЕНЮ — выйти\nПосле раунда: ЗАНОВО или СМЕНИТЬ БОЙЦА" if OS.has_feature("mobile") else "УПРАВЛЕНИЕ (F1 — скрыть)\nБой на паузе, пока открыта помощь\nA/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец\nP — пауза  •  M — звук  •  ESC — закрыть помощь\nПосле раунда: R — заново  •  Q — боец"
+    controls_help_label.text = "УПРАВЛЕНИЕ (кнопка — скрыть)\nБой на паузе, пока открыта помощь\nДжойстик слева — движение\nПРЫЖОК / УДАР / БЛОК / СПЕЦ — справа\nПАУЗА — остановить бой  •  МЕНЮ — выйти\nПосле раунда: ЗАНОВО или СМЕНИТЬ БОЙЦА" if OS.has_feature("mobile") else "УПРАВЛЕНИЕ (F1 — скрыть)\nБой на паузе, пока открыта помощь\nA/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец\nP — пауза  •  M — звук  •  F3 — FPS  •  ESC — закрыть помощь\nПосле раунда: R — заново  •  Q — боец"
     controls_help_label.position = Vector2(355, 185)
     controls_help_label.size = Vector2(580, 240)
     controls_help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -302,7 +305,7 @@ func _ready() -> void:
     menu_layer.add_child(subtitle)
     if not OS.has_feature("mobile"):
         var keyboard_hint := Label.new()
-        keyboard_hint.text = "A/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец  •  P — пауза  •  F1 — помощь"
+        keyboard_hint.text = "A/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец  •  P — пауза  •  F1 — помощь  •  F3 — FPS"
         keyboard_hint.position = Vector2(55, 285)
         keyboard_hint.size = Vector2(460, 44)
         keyboard_hint.add_theme_font_size_override("font_size", 14)
@@ -807,10 +810,15 @@ func _unhandled_key_input(event: InputEvent) -> void:
         display_settings.save("user://settings.cfg")
         get_viewport().set_input_as_handled()
         return
-    # F3 shows live frame rate without affecting gameplay or saved data.
+    # F3 keeps the optional desktop FPS counter across restarts.
     if not OS.has_feature("mobile") and event.keycode == KEY_F3:
-        fps_label.visible = not fps_label.visible
+        fps_enabled = not fps_label.visible
+        fps_label.visible = fps_enabled
         fps_elapsed = 1.0
+        var fps_settings := ConfigFile.new()
+        fps_settings.load("user://settings.cfg")
+        fps_settings.set_value("display", "show_fps", fps_enabled)
+        fps_settings.save("user://settings.cfg")
         get_viewport().set_input_as_handled()
         return
     # Audio can be toggled even during combat or character selection.
