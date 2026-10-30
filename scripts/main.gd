@@ -67,6 +67,7 @@ var joystick_axis := 0.0
 var joystick_touch := -1
 var combo_hits := 0
 var best_combo := 0
+var personal_best_combo := 0
 var damage_dealt := 0
 var damage_taken := 0
 var hits_landed := 0
@@ -115,6 +116,10 @@ func _ready() -> void:
         var saved_duration = saved_settings.get_value("match", "duration", 99)
         if typeof(saved_duration) == TYPE_INT and saved_duration in [30, 60, 99, 120, 180]:
             round_duration = float(saved_duration)
+        # Personal records are local until secure account sync is implemented.
+        var stored_best = saved_settings.get_value("records", "best_combo", 0)
+        if typeof(stored_best) == TYPE_INT and stored_best >= 0 and stored_best <= 9999:
+            personal_best_combo = stored_best
     for character in ["yamato", "erza", "alpha", "rias"]:
         fighter_textures.append(load("res://assets/fighters/%s.svg" % character))
     sound_library["swing"] = make_sound(0.13, 220.0, 90.0, 0.14, 0)
@@ -766,7 +771,13 @@ func finish_round(outcome: int) -> void:
         var accuracy := roundi(float(hits_landed) * 100.0 / float(attacks_attempted))
         result_label.text += "\nТОЧНОСТЬ: %d%% (%d из %d)" % [accuracy, hits_landed, attacks_attempted]
     if best_combo > 1:
-        result_label.text += "\nЛУЧШЕЕ КОМБО: %d" % best_combo
+        result_label.text += "\nКОМБО: %d  •  ЛИЧНЫЙ РЕКОРД: %d" % [best_combo, personal_best_combo]
+    # Write only at the end of a round to avoid disk I/O on every hit.
+    if personal_best_combo > 1:
+        var record_settings := ConfigFile.new()
+        record_settings.load("user://settings.cfg")
+        record_settings.set_value("records", "best_combo", personal_best_combo)
+        record_settings.save("user://settings.cfg")
     score_label.text = "ИГРОК %d : %d ПРОТИВНИК  •  НИЧЬИХ: %d" % [player_wins, enemy_wins, draws]
     result_label.visible = true
     restart_button.visible = true
@@ -972,6 +983,7 @@ func _process(delta: float) -> void:
             combo_hits += 1
             hits_landed += 1
             best_combo = maxi(best_combo, combo_hits)
+            personal_best_combo = maxi(personal_best_combo, combo_hits)
             update_accuracy_label()
             skill_energy = minf(100.0, skill_energy + (0.0 if can_skill else 11.0))
             combo_timer = 1.3
