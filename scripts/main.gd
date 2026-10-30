@@ -499,6 +499,8 @@ func show_selection() -> void:
     in_menu = true
     menu_layer.visible = false
     selection_layer.visible = true
+    dash_button.visible = false
+    dash_queued = false
     preview_fighter(selection_choice)
 
 func preview_fighter(index: int) -> void:
@@ -650,6 +652,7 @@ func toggle_pause() -> void:
     pause_toggle_button.text = ("ПРОДОЛЖИТЬ" if OS.has_feature("mobile") else "ПРОДОЛЖИТЬ (P)") if manual_paused else ("ПАУЗА" if OS.has_feature("mobile") else "ПАУЗА (P)")
     if manual_paused:
         stop_active_sounds()
+        dash_queued = false
         joystick_touch = -1
         joystick_axis = 0.0
         for key in held.keys():
@@ -913,6 +916,7 @@ func _notification(what: int) -> void:
         stop_active_sounds()
         joystick_touch = -1
         joystick_axis = 0.0
+        dash_queued = false
         for key in held.keys():
             held[key] = false
     sync_pause_overlay()
