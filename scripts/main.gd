@@ -107,9 +107,9 @@ func _ready() -> void:
             selection_choice = clampi(stored_fighter, 0, fighter_names.size() - 1)
         if typeof(stored_costume) == TYPE_INT:
             selected_costume = clampi(stored_costume, 0, costume_names.size() - 1)
-        # Older saves default to the original 99-second round.
+        # Older saves default to the original 99-second round; new presets are optional.
         var saved_duration = saved_settings.get_value("match", "duration", 99)
-        if typeof(saved_duration) == TYPE_INT and saved_duration in [60, 99, 120]:
+        if typeof(saved_duration) == TYPE_INT and saved_duration in [30, 60, 99, 120, 180]:
             round_duration = float(saved_duration)
     for character in ["yamato", "erza", "alpha", "rias"]:
         fighter_textures.append(load("res://assets/fighters/%s.svg" % character))
@@ -442,7 +442,7 @@ func save_selection_preferences() -> void:
 
 # Match length is a local preference; changing it affects the next round only.
 func cycle_round_duration() -> void:
-    var durations := [60, 99, 120]
+    var durations := [30, 60, 99, 120, 180]
     var index := durations.find(int(round_duration))
     round_duration = float(durations[(index + 1) % durations.size()])
     duration_button.text = "ТАЙМЕР РАУНДА: %d СЕК" % int(round_duration)
