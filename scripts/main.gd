@@ -30,6 +30,7 @@ var animation_clock := 0.0
 var player_motion := 0.0
 var enemy_motion := 0.0
 var cooldown_label: Label
+var accuracy_label: Label
 var in_menu := true
 var menu_layer: Control
 var pause_button: Button
@@ -217,6 +218,14 @@ func _ready() -> void:
     cooldown_label.position = Vector2(640, 650)
     cooldown_label.add_theme_font_size_override("font_size", 17)
     add_child(cooldown_label)
+    # Live accuracy feedback during the round, not only on the result screen.
+    accuracy_label = Label.new()
+    accuracy_label.position = Vector2(520, 688)
+    accuracy_label.size = Vector2(360, 25)
+    accuracy_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    accuracy_label.add_theme_font_size_override("font_size", 16)
+    accuracy_label.add_theme_color_override("font_color", Color("#80d9ff"))
+    add_child(accuracy_label)
     pause_button = Button.new()
     pause_button.text = "МЕНЮ" if OS.has_feature("mobile") else "МЕНЮ (ESC)"
     pause_button.position = Vector2(1100, 132)
@@ -633,6 +642,13 @@ func update_health_labels() -> void:
     enemy_name_label.add_theme_color_override("font_color",
         Color("#ff737e") if hp_right <= 25 else Color("#e7f0ff"))
 
+func update_accuracy_label() -> void:
+    var accuracy := 0
+    if attacks_attempted > 0:
+        accuracy = roundi(float(hits_landed) * 100.0 / float(attacks_attempted))
+    accuracy_label.text = "ТОЧНОСТЬ: %d/%d (%d%%)" % [hits_landed, attacks_attempted, accuracy]
+
+
 func restart_round() -> void:
     controls_help_label.visible = false
     manual_paused = false
@@ -658,6 +674,7 @@ func restart_round() -> void:
     damage_taken = 0
     hits_landed = 0
     attacks_attempted = 0
+    update_accuracy_label()
     hits_received = 0
     blocked_hits = 0
     combo_timer = 0.0
@@ -901,11 +918,13 @@ func _process(delta: float) -> void:
             skill_energy -= skill_cost
         attack_cooldown = 0.8 if can_skill else 0.43
         attacks_attempted += 1
+        update_accuracy_label()
         player_attack_fx = 0.18
         play_sound("swing")
         if absf(x_left - x_right) < (195.0 if can_skill else 155.0) and absf(y_left - 610.0) < 115.0:
             combo_hits += 1
             hits_landed += 1
+            update_accuracy_label()
             best_combo = maxi(best_combo, combo_hits)
             skill_energy = minf(100.0, skill_energy + (0.0 if can_skill else 11.0))
             combo_timer = 1.3
