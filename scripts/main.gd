@@ -220,10 +220,13 @@ func _ready() -> void:
     add_child(cooldown_label)
     # Live accuracy feedback during the round, not only on the result screen.
     accuracy_label = Label.new()
-    accuracy_label.position = Vector2(430, 688)
-    accuracy_label.size = Vector2(540, 25)
+    # Two-line adaptive combat stats avoid clipping combos on small screens.
+    accuracy_label.position = Vector2(400, 663)
+    accuracy_label.size = Vector2(570, 54)
     accuracy_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    accuracy_label.add_theme_font_size_override("font_size", 16)
+    accuracy_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+    accuracy_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    accuracy_label.add_theme_font_size_override("font_size", 15)
     accuracy_label.add_theme_color_override("font_color", Color("#80d9ff"))
     add_child(accuracy_label)
     pause_button = Button.new()
@@ -654,10 +657,10 @@ func update_accuracy_label() -> void:
     accuracy_label.add_theme_color_override("font_color",
         Color("#ffd47d") if combo_hits > 1 else Color("#80d9ff"))
     if combo_hits > 1:
-        accuracy_label.text += "  •  КОМБО x%d" % combo_hits
+        accuracy_label.text += "\nКОМБО x%d" % combo_hits
     # Blocked hits remain visible even while a combo is active.
     if blocked_hits > 0:
-        accuracy_label.text += "  •  БЛОКИ: %d" % blocked_hits
+        accuracy_label.text += ("%sБЛОКИ: %d" % ["  •  " if combo_hits > 1 else "\n", blocked_hits])
 
 
 func restart_round() -> void:
