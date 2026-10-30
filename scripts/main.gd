@@ -655,6 +655,8 @@ func update_accuracy_label() -> void:
         Color("#ffd47d") if combo_hits > 1 else Color("#80d9ff"))
     if combo_hits > 1:
         accuracy_label.text += "  •  КОМБО x%d" % combo_hits
+    elif blocked_hits > 0:
+        accuracy_label.text += "  •  БЛОКИ: %d" % blocked_hits
 
 
 func restart_round() -> void:
@@ -682,9 +684,9 @@ func restart_round() -> void:
     damage_taken = 0
     hits_landed = 0
     attacks_attempted = 0
-    update_accuracy_label()
     hits_received = 0
     blocked_hits = 0
+    update_accuracy_label()
     combo_timer = 0.0
     block_timer = 0.0
     skill_energy = 0.0
@@ -981,6 +983,7 @@ func _process(delta: float) -> void:
             hits_received += 1
             if block_timer > 0.0:
                 blocked_hits += 1
+            update_accuracy_label()
             # Taking damage interrupts the current combo; best combo stays in the round summary.
             combo_hits = 0
             combo_timer = 0.0
