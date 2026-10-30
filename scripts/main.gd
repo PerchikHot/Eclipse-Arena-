@@ -911,7 +911,13 @@ func _process(delta: float) -> void:
     if fps_label.visible:
         fps_elapsed += delta
         if fps_elapsed >= 0.5:
-            fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
+            var current_fps := Engine.get_frames_per_second()
+            fps_label.text = "FPS: %d" % current_fps
+            # Readable performance warning without a permanent overlay.
+            # Red: under 30 FPS; amber: under 50; blue: smooth gameplay.
+            fps_label.add_theme_color_override("font_color",
+                Color("#ff737e") if current_fps < 30 else
+                Color("#ffd17a") if current_fps < 50 else Color("#58c9ff"))
             fps_elapsed = 0.0
     # Do not let the round timer or opponent advance during Alt-Tab or
     # Android notification interruptions.
