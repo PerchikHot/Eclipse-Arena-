@@ -983,10 +983,10 @@ func _process(delta: float) -> void:
             hits_received += 1
             if block_timer > 0.0:
                 blocked_hits += 1
-            update_accuracy_label()
             # Taking damage interrupts the current combo; best combo stays in the round summary.
             combo_hits = 0
             combo_timer = 0.0
+            update_accuracy_label()
             enemy_energy = minf(100.0, enemy_energy + (0.0 if enemy_special else 9.0))
             skill_energy = minf(100.0, skill_energy + 4.0)
             if hp_left == 0:
