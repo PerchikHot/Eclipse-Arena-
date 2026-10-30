@@ -646,7 +646,13 @@ func update_accuracy_label() -> void:
     var accuracy := 0
     if attacks_attempted > 0:
         accuracy = roundi(float(hits_landed) * 100.0 / float(attacks_attempted))
-    accuracy_label.text = "ТОЧНОСТЬ: %d/%d (%d%%)" % [hits_landed, attacks_attempted, accuracy]
+    if attacks_attempted == 0:
+        accuracy_label.text = "ТОЧНОСТЬ: — (нет атак)"
+    else:
+        accuracy_label.text = "ТОЧНОСТЬ: %d/%d (%d%%)" % [hits_landed, attacks_attempted, accuracy]
+    # Make an active combo visible without permanently changing HUD colors.
+    accuracy_label.add_theme_color_override("font_color",
+        Color("#ffd47d") if combo_hits > 1 else Color("#80d9ff"))
     if combo_hits > 1:
         accuracy_label.text += "  •  КОМБО x%d" % combo_hits
 
