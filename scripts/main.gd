@@ -746,6 +746,10 @@ func finish_round(outcome: int) -> void:
     elif hp_left <= 0 or hp_right <= 0:
         result_label.text += "\nНОКАУТ"
     # Explain timeout victories and narrow defeats with exact remaining HP.
+    # Time spent in active combat excludes pauses and background interruptions.
+    # A knockout and a time-limit decision now show comparable durations.
+    var elapsed_seconds := clampi(ceili(round_duration - round_seconds), 0, int(round_duration))
+    result_label.text += "\nВРЕМЯ БОЯ: %d / %d сек" % [elapsed_seconds, int(round_duration)]
     result_label.text += "\nHP: %d / %d" % [hp_left, hp_right]
     result_label.text += "\nУРОН: %d нанесено / %d получено" % [damage_dealt, damage_taken]
     result_label.text += "\nПОПАДАНИЯ: %d / %d  •  БЛОК: %d" % [hits_landed, hits_received, blocked_hits]
