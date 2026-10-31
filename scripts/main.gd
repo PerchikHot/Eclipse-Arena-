@@ -80,6 +80,11 @@ var hits_received := 0
 var blocked_hits := 0
 var guard_breaks := 0
 var guard_break_flash := 0.0
+# A short, edge-triggered parry rewards timing instead of holding block.
+var parry_window := 0.0
+var parry_cooldown := 0.0
+var guard_was_pressed := false
+var successful_parries := 0
 var combo_timer := 0.0
 var block_timer := 0.0
 # Guard cannot be held indefinitely: it must recover after exhaustion.
@@ -815,6 +820,10 @@ func restart_round() -> void:
     blocked_hits = 0
     guard_breaks = 0
     guard_break_flash = 0.0
+    parry_window = 0.0
+    parry_cooldown = 0.0
+    guard_was_pressed = false
+    successful_parries = 0
     update_accuracy_label()
     combo_timer = 0.0
     block_timer = 0.0
@@ -879,7 +888,7 @@ func finish_round(outcome: int) -> void:
     result_label.text += "\nВРЕМЯ БОЯ: %d / %d сек" % [elapsed_seconds, int(round_duration)]
     result_label.text += "\nHP: %d / %d" % [hp_left, hp_right]
     result_label.text += "\nУРОН: %d нанесено / %d получено" % [damage_dealt, damage_taken]
-    result_label.text += "\nПОПАДАНИЯ: %d / %d  •  БЛОК: %d  •  ПРОБОЕВ: %d" % [hits_landed, hits_received, blocked_hits, guard_breaks]
+    result_label.text += "\nПОПАДАНИЯ: %d / %d  •  БЛОК: %d  •  ПРОБОЕВ: %d  •  ПАРИРОВАНИЙ: %d" % [hits_landed, hits_received, blocked_hits, guard_breaks, successful_parries]
     # Accuracy is based on actual attacks, not key presses during cooldown.
     # No attacks means no accuracy measurement, not a 0% miss rate.
     if attacks_attempted == 0:
@@ -924,6 +933,8 @@ func _notification(what: int) -> void:
         joystick_touch = -1
         joystick_axis = 0.0
         dash_queued = false
+        guard_was_pressed = false
+        parry_window = 0.0
         for key in held.keys():
             held[key] = false
     sync_pause_overlay()
@@ -1077,6 +1088,8 @@ func _process(delta: float) -> void:
     combo_timer = maxf(0.0, combo_timer - delta)
     block_timer = maxf(0.0, block_timer - delta)
     guard_break_flash = maxf(0.0, guard_break_flash - delta)
+    parry_window = maxf(0.0, parry_window - delta)
+    parry_cooldown = maxf(0.0, parry_cooldown - delta)
     if combo_timer <= 0.0 and combo_hits != 0:
         combo_hits = 0
         update_accuracy_label()
@@ -1098,6 +1111,12 @@ func _process(delta: float) -> void:
     var hit_pressed: bool = Input.is_key_pressed(KEY_J) or held["HIT"]
     player_motion = joystick_axis if absf(joystick_axis) > 0.2 else float(right_pressed) - float(left_pressed)
     var guard_requested: bool = held["BLOCK"] or Input.is_key_pressed(KEY_K)
+    if guard_requested and not guard_was_pressed and not guard_exhausted and parry_cooldown <= 0.0:
+        parry_window = 0.20
+        parry_cooldown = 0.85
+    if not guard_requested:
+        parry_window = 0.0
+    guard_was_pressed = guard_requested
     if guard_requested and not guard_exhausted:
         guard_stamina = maxf(0.0, guard_stamina - 24.0 * delta)
         if guard_stamina <= 0.0:
@@ -1195,37 +1214,48 @@ func _process(delta: float) -> void:
                 enemy_attack_fx = 0.3 if enemy_pending_special else 0.18
                 play_sound("swing")
                 if dash_invulnerable <= 0.0 and absf(x_left - x_right) < 145.0 and absf(y_left - 610.0) < 120.0:
-                    player_hit_fx = 0.22
-                    impact_flash = 0.15
-                    play_sound("hit")
-                    var hp_before_enemy_hit := hp_left
-                    var was_blocking := block_timer > 0.0
-                    var guard_broken := false
-                    if was_blocking:
-                        blocked_hits += 1
-                        # Blocking a real hit costs additional stamina. A
-                        # special attack is much harder to absorb than a jab.
-                        guard_stamina = maxf(0.0, guard_stamina - (42.0 if enemy_pending_special else 18.0))
-                        if guard_stamina <= 0.0:
-                            guard_exhausted = true
-                            guard_broken = true
-                            guard_breaks += 1
-                            guard_break_flash = 1.25
-                            block_timer = 0.0
-                    var enemy_damage := 15 if enemy_pending_special else 7
-                    if was_blocking:
-                        enemy_damage = (10 if enemy_pending_special else 5) if guard_broken else (4 if enemy_pending_special else 2)
-                    hp_left = maxi(0, hp_left - enemy_damage)
-                    damage_taken += hp_before_enemy_hit - hp_left
-                    hits_received += 1
-                    combo_hits = 0
-                    combo_timer = 0.0
-                    update_accuracy_label()
-                    enemy_energy = minf(100.0, enemy_energy + (0.0 if enemy_pending_special else 9.0))
-                    skill_energy = minf(100.0, skill_energy + 4.0)
-                    if hp_left == 0:
-                        finish_round(-1)
-                        return
+                    if block_timer > 0.0 and parry_window > 0.0:
+                        # A well-timed fresh block cancels the telegraphed hit.
+                        # The cooldown prevents rapidly tapping block for free.
+                        parry_window = 0.0
+                        successful_parries += 1
+                        guard_stamina = maxf(0.0, guard_stamina - 12.0)
+                        skill_energy = minf(100.0, skill_energy + 15.0)
+                        enemy_cooldown = maxf(enemy_cooldown, 0.9)
+                        impact_flash = 0.12
+                        play_sound("menu")
+                    else:
+                        player_hit_fx = 0.22
+                        impact_flash = 0.15
+                        play_sound("hit")
+                        var hp_before_enemy_hit := hp_left
+                        var was_blocking := block_timer > 0.0
+                        var guard_broken := false
+                        if was_blocking:
+                            blocked_hits += 1
+                            # Blocking a real hit costs additional stamina. A
+                            # special attack is much harder to absorb than a jab.
+                            guard_stamina = maxf(0.0, guard_stamina - (42.0 if enemy_pending_special else 18.0))
+                            if guard_stamina <= 0.0:
+                                guard_exhausted = true
+                                guard_broken = true
+                                guard_breaks += 1
+                                guard_break_flash = 1.25
+                                block_timer = 0.0
+                        var enemy_damage := 15 if enemy_pending_special else 7
+                        if was_blocking:
+                            enemy_damage = (10 if enemy_pending_special else 5) if guard_broken else (4 if enemy_pending_special else 2)
+                        hp_left = maxi(0, hp_left - enemy_damage)
+                        damage_taken += hp_before_enemy_hit - hp_left
+                        hits_received += 1
+                        combo_hits = 0
+                        combo_timer = 0.0
+                        update_accuracy_label()
+                        enemy_energy = minf(100.0, enemy_energy + (0.0 if enemy_pending_special else 9.0))
+                        skill_energy = minf(100.0, skill_energy + 4.0)
+                        if hp_left == 0:
+                            finish_round(-1)
+                            return
                 enemy_pending_special = false
         elif absf(x_left - x_right) < 140.0 and absf(y_left - 610.0) < 120.0 and enemy_cooldown <= 0.0:
             enemy_pending_special = enemy_energy >= skill_cost and randf() < 0.55
@@ -1237,7 +1267,7 @@ func _process(delta: float) -> void:
     # Communicate when the special attack is usable and when blocking is active.
     skill_label.text = ("СПЕЦ ГОТОВ %d/100" if skill_energy >= skill_cost else "ЭНЕРГИЯ %d/100") % int(skill_energy)
     update_enemy_energy_label()
-    cooldown_label.text = ("РЫВОК %.1fс • " % dash_cooldown if dash_cooldown > 0.0 else "РЫВОК ГОТОВ • ") + ("⚡ ПРОБИТ БЛОК! • " if guard_break_flash > 0.0 else "") + ("⚠ ВРАГ ГОТОВИТ УДАР!  " if enemy_windup > 0.0 else "") + ("ЩИТ ИСТОЩЕН • " if guard_exhausted else "ЩИТ %d/100 • " % int(guard_stamina)) + ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
+    cooldown_label.text = ("РЫВОК %.1fс • " % dash_cooldown if dash_cooldown > 0.0 else "РЫВОК ГОТОВ • ") + ("✦ ПАРИРОВАНИЕ! • " if parry_window > 0.0 else "") + ("⚡ ПРОБИТ БЛОК! • " if guard_break_flash > 0.0 else "") + ("⚠ ВРАГ ГОТОВИТ УДАР!  " if enemy_windup > 0.0 else "") + ("ЩИТ ИСТОЩЕН • " if guard_exhausted else "ЩИТ %d/100 • " % int(guard_stamina)) + ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
     update_health_labels()
     queue_redraw()
 
@@ -1255,6 +1285,9 @@ func _draw() -> void:
         draw_circle(joystick_center + Vector2(joystick_axis * 43.0, 0), 32.0, Color("#9788c2", 0.9))
     draw_sprite_fighter(Vector2(x_left, y_left), selected_fighter, x_right >= x_left, player_motion, player_attack_fx, player_hit_fx, hp_left)
     draw_sprite_fighter(Vector2(x_right, 610), enemy_fighter, x_left >= x_right, enemy_motion, enemy_attack_fx, enemy_hit_fx, hp_right)
+    if parry_window > 0.0:
+        draw_arc(Vector2(x_left, y_left - 115.0), 92.0, 0.0, TAU, 40,
+            Color("#8ef2d6", 0.95), 7.0)
     if dash_invulnerable > 0.0:
         draw_arc(Vector2(x_left, y_left - 115.0), 85.0, 0.0, TAU, 40,
             Color("#5be7ff", 0.85), 6.0)
