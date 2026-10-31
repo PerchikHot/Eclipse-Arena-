@@ -122,6 +122,11 @@ var training_target_direction := 1.0
 var training_target_button: Button
 var training_reset_button: Button
 var training_guard_button: Button
+var training_attack_button: Button
+var training_attack_label: Label
+var training_attack_enabled := false
+var training_attack_timer := 2.0
+var training_attack_windup := 0.0
 var training_range_label: Label
 var training_target_guarding := false
 var training_guarded_hits := 0
@@ -237,6 +242,18 @@ func _ready() -> void:
     training_guard_button.visible = false
     training_guard_button.pressed.connect(toggle_training_guard)
     add_child(training_guard_button)
+    training_attack_button = Button.new()
+    training_attack_button.position = Vector2(515, 340)
+    training_attack_button.size = Vector2(250, 46)
+    training_attack_button.visible = false
+    training_attack_button.pressed.connect(toggle_training_attacks)
+    add_child(training_attack_button)
+    training_attack_label = Label.new()
+    training_attack_label.position = Vector2(780, 345)
+    training_attack_label.size = Vector2(260, 38)
+    training_attack_label.add_theme_color_override("font_color", Color("#ffd17a"))
+    training_attack_label.visible = false
+    add_child(training_attack_label)
     # Training-only spacing guide, shared by keyboard and touch controls.
     training_range_label = Label.new()
     training_range_label.position = Vector2(515, 297)
@@ -562,6 +579,8 @@ func show_selection() -> void:
     training_target_button.visible = false
     training_reset_button.visible = false
     training_guard_button.visible = false
+    training_attack_button.visible = false
+    training_attack_label.visible = false
     training_range_label.visible = false
     dash_queued = false
     preview_fighter(selection_choice)
@@ -643,6 +662,8 @@ func select_fighter(index: int) -> void:
     draws = 0
     training_knockouts = 0
     training_guarded_hits = 0
+    training_attack_timer = 2.0
+    training_attack_windup = 0.0
     training_elapsed = 0.0
     training_hud_last = 0.0
     score_label.text = "МИШЕНЕЙ: 0 • УРОН: 0 • DPS: 0 • БЛОК: 0" if training_mode else "ИГРОК 0 : 0 ПРОТИВНИК  •  НИЧЬИХ: 0"
@@ -770,6 +791,8 @@ func show_menu() -> void:
     training_target_button.visible = false
     training_reset_button.visible = false
     training_guard_button.visible = false
+    training_attack_button.visible = false
+    training_attack_label.visible = false
     training_range_label.visible = false
     pause_toggle_button.visible = false
     controls_help_button.visible = false
@@ -809,6 +832,16 @@ func toggle_training_guard() -> void:
         return
     training_target_guarding = not training_target_guarding
     training_guard_button.text = "ЩИТ МИШЕНИ: ВКЛ" if training_target_guarding else "ЩИТ МИШЕНИ: ВЫКЛ"
+    play_sound("menu")
+
+func toggle_training_attacks() -> void:
+    if not training_mode or in_menu or round_over or manual_paused:
+        return
+    training_attack_enabled = not training_attack_enabled
+    training_attack_timer = 2.0
+    training_attack_windup = 0.0
+    training_attack_button.text = "МИШЕНЬ АТАКУЕТ: ДА" if training_attack_enabled else "МИШЕНЬ АТАКУЕТ: НЕТ"
+    training_attack_label.text = "Тренировка парирования" if training_attack_enabled else ""
     play_sound("menu")
 
 func toggle_training_target() -> void:
@@ -852,10 +885,14 @@ func start_game() -> void:
     training_target_button.visible = training_mode
     training_reset_button.visible = training_mode
     training_guard_button.visible = training_mode
+    training_attack_button.visible = training_mode
+    training_attack_label.visible = training_mode
     training_range_label.visible = training_mode
     update_training_range()
     training_target_button.text = training_target_caption()
     training_guard_button.text = "ЩИТ МИШЕНИ: ВКЛ" if training_target_guarding else "ЩИТ МИШЕНИ: ВЫКЛ"
+    training_attack_button.text = "МИШЕНЬ АТАКУЕТ: ДА" if training_attack_enabled else "МИШЕНЬ АТАКУЕТ: НЕТ"
+    training_attack_label.text = "" if not training_attack_enabled else "Тренировка парирования"
     pause_toggle_button.visible = true
     controls_help_button.visible = true
     cooldown_label.visible = true
@@ -934,6 +971,8 @@ func restart_round() -> void:
     x_left = 300.0
     x_right = 900.0
     training_target_direction = 1.0
+    training_attack_timer = 2.0
+    training_attack_windup = 0.0
     y_left = 610.0
     velocity_y = 0.0
     attack_cooldown = 0.0
@@ -1316,6 +1355,37 @@ func _process(delta: float) -> void:
             x_right = 470.0
             training_target_direction = 1.0
         enemy_motion = training_target_direction
+    # Optional sparring drill: the dummy telegraphs low-damage attacks so
+    # parry, guard and dash can be practiced without losing a ranked round.
+    if training_mode and training_attack_enabled:
+        if training_attack_windup > 0.0:
+            training_attack_windup = maxf(0.0, training_attack_windup - delta)
+            training_attack_label.text = "ЗАМАХ: %.1f с" % training_attack_windup
+            if training_attack_windup <= 0.0:
+                enemy_attack_fx = 0.3
+                training_attack_timer = 2.5
+                training_attack_label.text = "УДАР МИШЕНИ"
+                if dash_invulnerable <= 0.0 and absf(x_left - x_right) < 150.0 and absf(y_left - 610.0) < 120.0:
+                    if block_timer > 0.0 and parry_window > 0.0:
+                        parry_window = 0.0
+                        successful_parries += 1
+                        guard_stamina = maxf(0.0, guard_stamina - 12.0)
+                        skill_energy = minf(100.0, skill_energy + 15.0)
+                        training_attack_label.text = "ПАРИРОВАНО: %d" % successful_parries
+                        play_sound("menu")
+                    else:
+                        var damage := 2 if block_timer > 0.0 else 6
+                        hp_left = maxi(1, hp_left - damage)
+                        damage_taken += damage
+                        hits_received += 1
+                        player_hit_fx = 0.2
+                        play_sound("hit")
+                        update_health_labels()
+        else:
+            training_attack_timer -= delta
+            training_attack_label.text = "АТАКА ЧЕРЕЗ: %.1f с" % maxf(0.0, training_attack_timer)
+            if training_attack_timer <= 0.0 and absf(x_left - x_right) < 195.0:
+                training_attack_windup = 0.65
     var skill_pressed: bool = held["SKILL"] or Input.is_key_pressed(KEY_L)
     var can_skill: bool = skill_pressed and skill_energy >= skill_cost
     if (hit_pressed or can_skill) and attack_cooldown <= 0 and block_timer <= 0.0:
