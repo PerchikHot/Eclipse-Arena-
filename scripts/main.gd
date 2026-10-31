@@ -1,5 +1,7 @@
 extends Node2D
 
+const CombatRules = preload("res://scripts/combat_rules.gd")
+
 var hp_left := 100
 var hp_right := 100
 var x_left := 300.0
@@ -934,7 +936,7 @@ func finish_training_challenge(completed: bool) -> void:
     training_attack_button.text = "МИШЕНЬ АТАКУЕТ: НЕТ"
     training_challenge_button.text = "ЗАЩИТА 60 С • СТАРТ"
     round_timer_label.text = "∞"
-    var score := successful_parries * 3 + training_dodges * 2
+    var score := CombatRules.defense_challenge_score(successful_parries, training_dodges)
     if completed and score > training_challenge_best:
         training_challenge_best = score
         var settings := ConfigFile.new()
@@ -1369,12 +1371,11 @@ func _process(delta: float) -> void:
             if training_challenge_running:
                 # Live scoring helps players adjust timing during the 60s
                 # drill. Count only attacks actually attempted by the dummy.
-                var defended := successful_parries + training_dodges
-                var accuracy := 0 if training_attack_attempts == 0 else roundi(
-                    100.0 * float(defended) / float(training_attack_attempts))
+                var accuracy := CombatRules.defense_accuracy(
+                    successful_parries, training_dodges, training_attack_attempts)
                 score_label.text += " • ОЧКИ: %d • ЗАЩИТА: %d%%" % [
-                    successful_parries * 3 + training_dodges * 2,
-                    clampi(accuracy, 0, 100)]
+                    CombatRules.defense_challenge_score(successful_parries, training_dodges),
+                    accuracy]
             if training_challenge_result != "":
                 score_label.text += " • " + training_challenge_result
             update_training_range()

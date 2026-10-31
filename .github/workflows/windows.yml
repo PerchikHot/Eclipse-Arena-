@@ -28,6 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           godot --headless --path . --editor --quit
+          godot --headless --path . --script res://tests/combat_rules_smoke.gd
           mkdir -p build
           godot --headless --path . --export-release "Windows Desktop" build/EclipseArena.exe
           test -s build/EclipseArena.exe
