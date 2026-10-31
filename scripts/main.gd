@@ -121,6 +121,9 @@ var training_target_speed := 1 # 1 = slow, 2 = fast
 var training_target_direction := 1.0
 var training_target_button: Button
 var training_reset_button: Button
+var training_guard_button: Button
+var training_target_guarding := false
+var training_guarded_hits := 0
 var timer_warning_active := false
 var final_countdown_active := false
 var has_game_focus := true
@@ -227,6 +230,12 @@ func _ready() -> void:
     training_reset_button.visible = false
     training_reset_button.pressed.connect(reset_training_session)
     add_child(training_reset_button)
+    training_guard_button = Button.new()
+    training_guard_button.position = Vector2(515, 245)
+    training_guard_button.size = Vector2(250, 46)
+    training_guard_button.visible = false
+    training_guard_button.pressed.connect(toggle_training_guard)
+    add_child(training_guard_button)
     player_name_label = Label.new()
     player_name_label.position = Vector2(55, 10)
     player_name_label.add_theme_font_size_override("font_size", 20)
@@ -339,7 +348,7 @@ func _ready() -> void:
     add_child(pause_overlay)
     # Desktop-only help can be opened during a match or while paused.
     controls_help_label = Label.new()
-    controls_help_label.text = "УПРАВЛЕНИЕ (кнопка — скрыть)\nБой на паузе, пока открыта помощь\nДжойстик слева — движение\nПРЫЖОК / УДАР / БЛОК / СПЕЦ — справа\nРЫВОК — уклонение (30 щита)  •  ПАУЗА — остановить бой  •  МЕНЮ — выйти\nВ тренировке: СБРОС — начать заново\nПосле раунда: ЗАНОВО или СМЕНИТЬ БОЙЦА" if OS.has_feature("mobile") else "УПРАВЛЕНИЕ (F1 — скрыть)\nБой на паузе, пока открыта помощь\nA/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец\nSHIFT — рывок  •  P — пауза  •  M — звук  •  F3 — FPS  •  ESC — помощь\nТренировка: T — скорость мишени  •  R — сброс\nПосле раунда: R — заново  •  Q — боец"
+    controls_help_label.text = "УПРАВЛЕНИЕ (кнопка — скрыть)\nБой на паузе, пока открыта помощь\nДжойстик слева — движение\nПРЫЖОК / УДАР / БЛОК / СПЕЦ — справа\nРЫВОК — уклонение (30 щита)  •  ПАУЗА — остановить бой  •  МЕНЮ — выйти\nВ тренировке: ЩИТ — защита мишени, СБРОС — заново\nПосле раунда: ЗАНОВО или СМЕНИТЬ БОЙЦА" if OS.has_feature("mobile") else "УПРАВЛЕНИЕ (F1 — скрыть)\nБой на паузе, пока открыта помощь\nA/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец\nSHIFT — рывок  •  P — пауза  •  M — звук  •  F3 — FPS  •  ESC — помощь\nТренировка: T — скорость мишени  •  G — щит  •  R — сброс\nПосле раунда: R — заново  •  Q — боец"
     controls_help_label.position = Vector2(355, 185)
     controls_help_label.size = Vector2(580, 240)
     controls_help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -544,6 +553,7 @@ func show_selection() -> void:
     dash_button.visible = false
     training_target_button.visible = false
     training_reset_button.visible = false
+    training_guard_button.visible = false
     dash_queued = false
     preview_fighter(selection_choice)
 
@@ -623,9 +633,10 @@ func select_fighter(index: int) -> void:
     enemy_wins = 0
     draws = 0
     training_knockouts = 0
+    training_guarded_hits = 0
     training_elapsed = 0.0
     training_hud_last = 0.0
-    score_label.text = "МИШЕНЕЙ: 0 • УРОН: 0 • DPS: 0" if training_mode else "ИГРОК 0 : 0 ПРОТИВНИК  •  НИЧЬИХ: 0"
+    score_label.text = "МИШЕНЕЙ: 0 • УРОН: 0 • DPS: 0 • БЛОК: 0" if training_mode else "ИГРОК 0 : 0 ПРОТИВНИК  •  НИЧЬИХ: 0"
     update_health_labels()
     selection_layer.visible = false
     restart_round()
@@ -749,6 +760,7 @@ func show_menu() -> void:
     dash_button.visible = false
     training_target_button.visible = false
     training_reset_button.visible = false
+    training_guard_button.visible = false
     pause_toggle_button.visible = false
     controls_help_button.visible = false
     cooldown_label.visible = false
@@ -767,6 +779,13 @@ func training_target_caption() -> String:
     if not training_target_moves:
         return "МИШЕНЬ: СТОИТ"
     return "МИШЕНЬ: БЫСТРО" if training_target_speed == 2 else "МИШЕНЬ: МЕДЛЕННО"
+
+func toggle_training_guard() -> void:
+    if not training_mode or in_menu or round_over or manual_paused:
+        return
+    training_target_guarding = not training_target_guarding
+    training_guard_button.text = "ЩИТ МИШЕНИ: ВКЛ" if training_target_guarding else "ЩИТ МИШЕНИ: ВЫКЛ"
+    play_sound("menu")
 
 func toggle_training_target() -> void:
     if not training_mode or in_menu or round_over or manual_paused:
@@ -789,9 +808,10 @@ func reset_training_session() -> void:
     if not training_mode or in_menu or manual_paused or round_over:
         return
     training_knockouts = 0
+    training_guarded_hits = 0
     training_elapsed = 0.0
     training_hud_last = 0.0
-    score_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: 0 • УРОН: 0 • DPS: 0"
+    score_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: 0 • УРОН: 0 • DPS: 0 • БЛОК: 0"
     restart_round()
     play_sound("menu")
 
@@ -807,7 +827,9 @@ func start_game() -> void:
     dash_button.visible = true
     training_target_button.visible = training_mode
     training_reset_button.visible = training_mode
+    training_guard_button.visible = training_mode
     training_target_button.text = training_target_caption()
+    training_guard_button.text = "ЩИТ МИШЕНИ: ВКЛ" if training_target_guarding else "ЩИТ МИШЕНИ: ВЫКЛ"
     pause_toggle_button.visible = true
     controls_help_button.visible = true
     cooldown_label.visible = true
@@ -895,6 +917,7 @@ func restart_round() -> void:
     combo_hits = 0
     best_combo = 0
     damage_dealt = 0
+    training_guarded_hits = 0
     damage_taken = 0
     hits_landed = 0
     attacks_attempted = 0
@@ -1079,6 +1102,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
         toggle_training_target()
         get_viewport().set_input_as_handled()
         return
+    if event.keycode == KEY_G and training_mode and not manual_paused and not round_over:
+        toggle_training_guard()
+        get_viewport().set_input_as_handled()
+        return
     if event.keycode == KEY_SHIFT and not manual_paused and not round_over:
         dash_queued = true
         get_viewport().set_input_as_handled()
@@ -1152,7 +1179,7 @@ func _process(delta: float) -> void:
             # The damage total survives dummy respawns but resets with the
             # training session; no training stats affect ranked records.
             var average_dps := 0.0 if training_elapsed <= 0.0 else float(damage_dealt) / training_elapsed
-            score_label.text = "МИШЕНЕЙ: %d • УРОН: %d • DPS: %.1f" % [training_knockouts, damage_dealt, average_dps]
+            score_label.text = "МИШЕНЕЙ: %d • УРОН: %d • DPS: %.1f • БЛОК: %d" % [training_knockouts, damage_dealt, average_dps, training_guarded_hits]
     animation_clock += delta
     if not training_mode:
         round_seconds = maxf(0.0, round_seconds - delta)
@@ -1282,7 +1309,12 @@ func _process(delta: float) -> void:
             skill_energy = minf(100.0, skill_energy + (0.0 if can_skill else 11.0))
             combo_timer = 1.3
             var hp_before_hit := hp_right
-            hp_right = maxi(0, hp_right - (18 if can_skill else 8 + mini(combo_hits, 4)))
+            var attack_damage := 18 if can_skill else 8 + mini(combo_hits, 4)
+            # Practice ordinary hits against guard; specials break through.
+            if training_mode and training_target_guarding and not can_skill:
+                attack_damage = maxi(1, int(attack_damage / 4))
+                training_guarded_hits += 1
+            hp_right = maxi(0, hp_right - attack_damage)
             damage_dealt += hp_before_hit - hp_right
             enemy_hit_fx = 0.22
             enemy_energy = minf(100.0, enemy_energy + 5.0)
@@ -1294,7 +1326,7 @@ func _process(delta: float) -> void:
                     hp_right = 100
                     enemy_energy = 0.0
                     round_number_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: %d" % training_knockouts
-                    score_label.text = "МИШЕНЕЙ: %d • УРОН: %d • DPS: %.1f" % [training_knockouts, damage_dealt, float(damage_dealt) / maxf(0.1, training_elapsed)]
+                    score_label.text = "МИШЕНЕЙ: %d • УРОН: %d • DPS: %.1f • БЛОК: %d" % [training_knockouts, damage_dealt, float(damage_dealt) / maxf(0.1, training_elapsed), training_guarded_hits]
                 else:
                     finish_round(1)
                     return
