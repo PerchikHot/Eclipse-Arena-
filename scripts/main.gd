@@ -122,6 +122,7 @@ var training_target_direction := 1.0
 var training_target_button: Button
 var training_reset_button: Button
 var training_guard_button: Button
+var training_range_label: Label
 var training_target_guarding := false
 var training_guarded_hits := 0
 var timer_warning_active := false
@@ -236,6 +237,13 @@ func _ready() -> void:
     training_guard_button.visible = false
     training_guard_button.pressed.connect(toggle_training_guard)
     add_child(training_guard_button)
+    # Training-only spacing guide, shared by keyboard and touch controls.
+    training_range_label = Label.new()
+    training_range_label.position = Vector2(515, 297)
+    training_range_label.size = Vector2(450, 35)
+    training_range_label.add_theme_font_size_override("font_size", 17)
+    training_range_label.visible = false
+    add_child(training_range_label)
     player_name_label = Label.new()
     player_name_label.position = Vector2(55, 10)
     player_name_label.add_theme_font_size_override("font_size", 20)
@@ -761,6 +769,7 @@ func show_menu() -> void:
     training_target_button.visible = false
     training_reset_button.visible = false
     training_guard_button.visible = false
+    training_range_label.visible = false
     pause_toggle_button.visible = false
     controls_help_button.visible = false
     cooldown_label.visible = false
@@ -779,6 +788,20 @@ func training_target_caption() -> String:
     if not training_target_moves:
         return "МИШЕНЬ: СТОИТ"
     return "МИШЕНЬ: БЫСТРО" if training_target_speed == 2 else "МИШЕНЬ: МЕДЛЕННО"
+
+func update_training_range() -> void:
+    if not training_mode:
+        return
+    var distance := absf(x_left - x_right)
+    var aligned := absf(y_left - 610.0) < 115.0
+    var normal_hit := distance < 155.0 and aligned
+    var special_hit := distance < 195.0 and aligned
+    training_range_label.text = "ДИСТ: %d • УДАР: %s • СПЕЦ: %s" % [
+        roundi(distance), "ДА" if normal_hit else "НЕТ",
+        "ДА" if special_hit else "НЕТ"]
+    training_range_label.add_theme_color_override("font_color",
+        Color("#76e5b0") if normal_hit else
+        Color("#ffd17a") if special_hit else Color("#ff8b9e"))
 
 func toggle_training_guard() -> void:
     if not training_mode or in_menu or round_over or manual_paused:
@@ -828,6 +851,8 @@ func start_game() -> void:
     training_target_button.visible = training_mode
     training_reset_button.visible = training_mode
     training_guard_button.visible = training_mode
+    training_range_label.visible = training_mode
+    update_training_range()
     training_target_button.text = training_target_caption()
     training_guard_button.text = "ЩИТ МИШЕНИ: ВКЛ" if training_target_guarding else "ЩИТ МИШЕНИ: ВЫКЛ"
     pause_toggle_button.visible = true
@@ -1180,6 +1205,7 @@ func _process(delta: float) -> void:
             # training session; no training stats affect ranked records.
             var average_dps := 0.0 if training_elapsed <= 0.0 else float(damage_dealt) / training_elapsed
             score_label.text = "МИШЕНЕЙ: %d • УРОН: %d • DPS: %.1f • БЛОК: %d" % [training_knockouts, damage_dealt, average_dps, training_guarded_hits]
+            update_training_range()
     animation_clock += delta
     if not training_mode:
         round_seconds = maxf(0.0, round_seconds - delta)
