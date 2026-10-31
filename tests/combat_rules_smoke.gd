@@ -33,6 +33,9 @@ func _initialize() -> void:
         and Rules.player_attack_damage(4, false, true) == 3
         and Rules.player_attack_damage(4, true, true) == 18
         and Rules.player_attack_damage(-1, false, false) == 8
+        and Rules.training_damage_preview(0, false) == Vector2i(8, 18)
+        and Rules.training_damage_preview(4, false) == Vector2i(12, 18)
+        and Rules.training_damage_preview(4, true) == Vector2i(3, 18)
     )
     if not passed:
         push_error("Defense drill scoring regression")

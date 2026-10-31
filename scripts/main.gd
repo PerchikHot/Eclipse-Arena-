@@ -294,7 +294,7 @@ func _ready() -> void:
     # Training-only spacing guide, shared by keyboard and touch controls.
     training_range_label = Label.new()
     training_range_label.position = Vector2(515, 297)
-    training_range_label.size = Vector2(450, 35)
+    training_range_label.size = Vector2(600, 62)
     training_range_label.add_theme_font_size_override("font_size", 17)
     training_range_label.visible = false
     add_child(training_range_label)
@@ -872,9 +872,11 @@ func update_training_range() -> void:
     var aligned := absf(y_left - 610.0) < 115.0
     var normal_hit := distance < 155.0 and aligned
     var special_hit := distance < 195.0 and aligned
-    training_range_label.text = "ДИСТ: %d • УДАР: %s • СПЕЦ: %s" % [
+    var preview := CombatRules.training_damage_preview(combo_hits, training_target_guarding)
+    training_range_label.text = "ДИСТ: %d • УДАР: %s • СПЕЦ: %s\nУРОН: %d • СПЕЦ: %d (нужно %d энергии)" % [
         roundi(distance), "ДА" if normal_hit else "НЕТ",
-        "ДА" if special_hit else "НЕТ"]
+        "ДА" if special_hit else "НЕТ",
+        preview.x, preview.y, int(skill_cost)]
     training_range_label.add_theme_color_override("font_color",
         Color("#76e5b0") if normal_hit else
         Color("#ffd17a") if special_hit else Color("#ff8b9e"))

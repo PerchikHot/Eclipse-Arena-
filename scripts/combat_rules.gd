@@ -41,6 +41,14 @@ static func next_defense_streak(current: int, defended: bool) -> int:
 # A special attack consumes energy and pierces the sparring dummy's guard.
 # Ordinary attacks scale with the combo but never exceed the +4 bonus.
 # Keeping damage in one rule avoids Android/Windows training differences.
+# A live training preview uses the exact same combat rules as real hits.
+# The preview is informational; it never spends energy or alters records.
+static func training_damage_preview(combo_hits: int, target_guarding: bool) -> Vector2i:
+    return Vector2i(
+        player_attack_damage(combo_hits, false, target_guarding),
+        player_attack_damage(combo_hits, true, target_guarding)
+    )
+
 static func player_attack_damage(combo_hits: int, special: bool, target_guarding: bool) -> int:
     if special:
         return 18
