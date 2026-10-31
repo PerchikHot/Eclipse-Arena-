@@ -78,6 +78,7 @@ jobs:
           path: build/EclipseArena.exe
           if-no-files-found: error
       - name: Publish Windows executable for All Hub
+        shell: bash
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
