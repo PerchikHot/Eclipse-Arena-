@@ -132,6 +132,8 @@ var training_attack_windup := 0.0
 var training_range_label: Label
 var training_target_guarding := false
 var training_guarded_hits := 0
+var training_attack_attempts := 0
+var training_dodges := 0
 var timer_warning_active := false
 var final_countdown_active := false
 var has_game_focus := true
@@ -674,11 +676,13 @@ func select_fighter(index: int) -> void:
     draws = 0
     training_knockouts = 0
     training_guarded_hits = 0
+    training_attack_attempts = 0
+    training_dodges = 0
     training_attack_timer = training_attack_interval()
     training_attack_windup = 0.0
     training_elapsed = 0.0
     training_hud_last = 0.0
-    score_label.text = "МИШЕНЕЙ: 0 • УРОН: 0 • DPS: 0 • БЛОК: 0" if training_mode else "ИГРОК 0 : 0 ПРОТИВНИК  •  НИЧЬИХ: 0"
+    score_label.text = "МИШЕНЕЙ: 0 • УРОН: 0 • DPS: 0 • БЛОК: 0 • ПАРИР: 0/0 • УКЛ: 0" if training_mode else "ИГРОК 0 : 0 ПРОТИВНИК  •  НИЧЬИХ: 0"
     update_health_labels()
     selection_layer.visible = false
     restart_round()
@@ -901,9 +905,11 @@ func reset_training_session() -> void:
         return
     training_knockouts = 0
     training_guarded_hits = 0
+    training_attack_attempts = 0
+    training_dodges = 0
     training_elapsed = 0.0
     training_hud_last = 0.0
-    score_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: 0 • УРОН: 0 • DPS: 0 • БЛОК: 0"
+    score_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: 0 • УРОН: 0 • DPS: 0 • БЛОК: 0 • ПАРИР: 0/0 • УКЛ: 0"
     restart_round()
     play_sound("menu")
 
@@ -1020,6 +1026,8 @@ func restart_round() -> void:
     best_combo = 0
     damage_dealt = 0
     training_guarded_hits = 0
+    training_attack_attempts = 0
+    training_dodges = 0
     damage_taken = 0
     hits_landed = 0
     attacks_attempted = 0
@@ -1285,7 +1293,7 @@ func _process(delta: float) -> void:
             # The damage total survives dummy respawns but resets with the
             # training session; no training stats affect ranked records.
             var average_dps := 0.0 if training_elapsed <= 0.0 else float(damage_dealt) / training_elapsed
-            score_label.text = "МИШЕНЕЙ: %d • УРОН: %d • DPS: %.1f • БЛОК: %d" % [training_knockouts, damage_dealt, average_dps, training_guarded_hits]
+            score_label.text = "МИШЕНЕЙ: %d • УРОН: %d • DPS: %.1f • БЛОК: %d • ПАРИР: %d/%d • УКЛ: %d" % [training_knockouts, damage_dealt, average_dps, training_guarded_hits, successful_parries, training_attack_attempts, training_dodges]
             update_training_range()
     animation_clock += delta
     if not training_mode:
@@ -1406,8 +1414,12 @@ func _process(delta: float) -> void:
                 enemy_attack_fx = 0.3
                 training_attack_timer = training_attack_interval()
                 training_attack_label.text = "УДАР МИШЕНИ"
-                if dash_invulnerable <= 0.0 and absf(x_left - x_right) < 150.0 and absf(y_left - 610.0) < 120.0:
-                    if block_timer > 0.0 and parry_window > 0.0:
+                if absf(x_left - x_right) < 150.0 and absf(y_left - 610.0) < 120.0:
+                    training_attack_attempts += 1
+                    if dash_invulnerable > 0.0:
+                        training_dodges += 1
+                        training_attack_label.text = "УКЛОНЕНИЕ: %d" % training_dodges
+                    elif block_timer > 0.0 and parry_window > 0.0:
                         parry_window = 0.0
                         successful_parries += 1
                         guard_stamina = maxf(0.0, guard_stamina - 12.0)
@@ -1464,7 +1476,7 @@ func _process(delta: float) -> void:
                     hp_right = 100
                     enemy_energy = 0.0
                     round_number_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: %d" % training_knockouts
-                    score_label.text = "МИШЕНЕЙ: %d • УРОН: %d • DPS: %.1f • БЛОК: %d" % [training_knockouts, damage_dealt, float(damage_dealt) / maxf(0.1, training_elapsed), training_guarded_hits]
+                    score_label.text = "МИШЕНЕЙ: %d • УРОН: %d • DPS: %.1f • БЛОК: %d • ПАРИР: %d/%d • УКЛ: %d" % [training_knockouts, damage_dealt, float(damage_dealt) / maxf(0.1, training_elapsed), training_guarded_hits, successful_parries, training_attack_attempts, training_dodges]
                 else:
                     finish_round(1)
                     return
