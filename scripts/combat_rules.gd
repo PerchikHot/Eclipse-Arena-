@@ -31,3 +31,8 @@ static func defense_challenge_grade(parries: int, dodges: int, attempts: int) ->
 # the saved personal record. This is shared by touch and keyboard builds.
 static func eligible_defense_record(completed: bool, attempts: int) -> bool:
     return completed and attempts >= 3
+
+# A hit breaks the defensive streak. Only attacks actually attempted by
+# the sparring dummy count, so standing out of range cannot farm a record.
+static func next_defense_streak(current: int, defended: bool) -> int:
+    return mini(99999, maxi(0, current) + 1) if defended else 0
