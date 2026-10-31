@@ -110,6 +110,10 @@ var match_target_wins := 2 # 0 = endless rounds
 var match_finished := false
 var training_mode := false
 var training_knockouts := 0
+# Optional moving target for practicing spacing; it never attacks.
+var training_target_moves := false
+var training_target_direction := 1.0
+var training_target_button: Button
 var timer_warning_active := false
 var final_countdown_active := false
 var has_game_focus := true
@@ -200,6 +204,12 @@ func _ready() -> void:
             dash_queued = true
     )
     add_child(dash_button)
+    training_target_button = Button.new()
+    training_target_button.position = Vector2(515, 137)
+    training_target_button.size = Vector2(250, 48)
+    training_target_button.visible = false
+    training_target_button.pressed.connect(toggle_training_target)
+    add_child(training_target_button)
     player_name_label = Label.new()
     player_name_label.position = Vector2(55, 10)
     player_name_label.add_theme_font_size_override("font_size", 20)
@@ -510,6 +520,7 @@ func show_selection() -> void:
     menu_layer.visible = false
     selection_layer.visible = true
     dash_button.visible = false
+    training_target_button.visible = false
     dash_queued = false
     preview_fighter(selection_choice)
 
@@ -703,6 +714,7 @@ func show_menu() -> void:
         controls[key].visible = false
     pause_button.visible = false
     dash_button.visible = false
+    training_target_button.visible = false
     pause_toggle_button.visible = false
     controls_help_button.visible = false
     cooldown_label.visible = false
@@ -717,6 +729,13 @@ func show_menu() -> void:
     change_fighter_button.visible = false
     result_label.visible = false
 
+func toggle_training_target() -> void:
+    if not training_mode or in_menu or round_over or manual_paused:
+        return
+    training_target_moves = not training_target_moves
+    training_target_button.text = "МИШЕНЬ: ДВИЖЕТСЯ" if training_target_moves else "МИШЕНЬ: СТОИТ"
+    play_sound("menu")
+
 func start_game() -> void:
     controls_help_label.visible = false
     play_sound("menu")
@@ -727,6 +746,8 @@ func start_game() -> void:
         controls[key].visible = true
     pause_button.visible = true
     dash_button.visible = true
+    training_target_button.visible = training_mode
+    training_target_button.text = "МИШЕНЬ: ДВИЖЕТСЯ" if training_target_moves else "МИШЕНЬ: СТОИТ"
     pause_toggle_button.visible = true
     controls_help_button.visible = true
     cooldown_label.visible = true
@@ -804,6 +825,7 @@ func restart_round() -> void:
     update_health_labels()
     x_left = 300.0
     x_right = 900.0
+    training_target_direction = 1.0
     y_left = 610.0
     velocity_y = 0.0
     attack_cooldown = 0.0
@@ -989,6 +1011,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
         return
     if in_menu:
         return
+    if event.keycode == KEY_T and training_mode and not manual_paused and not round_over:
+        toggle_training_target()
+        get_viewport().set_input_as_handled()
+        return
     if event.keycode == KEY_SHIFT and not manual_paused and not round_over:
         dash_queued = true
         get_viewport().set_input_as_handled()
@@ -1151,6 +1177,17 @@ func _process(delta: float) -> void:
     y_left = minf(610, y_left + velocity_y * delta)
     if y_left >= 610:
         velocity_y = 0
+    # A reversible training drill: practice timing against a moving target
+    # without enabling AI attacks, a timer, or ranked combo records.
+    if training_mode and training_target_moves:
+        x_right += training_target_direction * 135.0 * delta
+        if x_right >= 1060.0:
+            x_right = 1060.0
+            training_target_direction = -1.0
+        elif x_right <= 470.0:
+            x_right = 470.0
+            training_target_direction = 1.0
+        enemy_motion = training_target_direction
     var skill_pressed: bool = held["SKILL"] or Input.is_key_pressed(KEY_L)
     var can_skill: bool = skill_pressed and skill_energy >= skill_cost
     if (hit_pressed or can_skill) and attack_cooldown <= 0 and block_timer <= 0.0:
