@@ -612,6 +612,7 @@ func show_selection() -> void:
     training_guard_button.visible = false
     training_attack_button.visible = false
     training_pace_button.visible = false
+    training_challenge_button.visible = false
     training_attack_label.visible = false
     training_challenge_button.visible = false
     training_range_label.visible = false
@@ -806,6 +807,10 @@ func toggle_controls_help() -> void:
 
 
 func show_menu() -> void:
+    # Leaving training abandons the timed challenge without saving a record.
+    # It cannot remain active invisibly behind the main menu.
+    if training_challenge_running:
+        finish_training_challenge(false)
     controls_help_label.visible = false
     play_sound("menu")
     manual_paused = false
@@ -937,7 +942,9 @@ func finish_training_challenge(completed: bool) -> void:
     training_challenge_button.text = "ЗАЩИТА 60 С • СТАРТ"
     round_timer_label.text = "∞"
     var score := CombatRules.defense_challenge_score(successful_parries, training_dodges)
-    if completed and score > training_challenge_best:
+    var eligible := CombatRules.eligible_defense_record(
+        completed, training_attack_attempts)
+    if eligible and score > training_challenge_best:
         training_challenge_best = score
         var settings := ConfigFile.new()
         settings.load("user://settings.cfg")
@@ -945,7 +952,9 @@ func finish_training_challenge(completed: bool) -> void:
         settings.save("user://settings.cfg")
     var rank := CombatRules.defense_challenge_grade(
         successful_parries, training_dodges, training_attack_attempts)
-    training_challenge_result = ("ИТОГ" if completed else "ПРЕРВАНО") + " • ЗАЩИТА: %d • РЕКОРД: %d • РАНГ: %s" % [score, training_challenge_best, rank]
+    var result_title := "ПРЕРВАНО" if not completed else (
+        "ИТОГ" if eligible else "НЕ ЗАЧТЕНО (меньше 3 атак)")
+    training_challenge_result = result_title + " • ЗАЩИТА: %d • РЕКОРД: %d • РАНГ: %s" % [score, training_challenge_best, rank]
     training_attack_label.text = training_challenge_result
     play_sound("victory" if completed else "menu")
 
