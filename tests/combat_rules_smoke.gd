@@ -26,6 +26,13 @@ func _initialize() -> void:
         and Rules.next_defense_streak(4, false) == 0
         and Rules.next_defense_streak(-1, true) == 1
         and Rules.next_defense_streak(99999, true) == 99999
+        and Rules.player_attack_damage(1, false, false) == 9
+        and Rules.player_attack_damage(4, false, false) == 12
+        and Rules.player_attack_damage(100, false, false) == 12
+        and Rules.player_attack_damage(1, false, true) == 2
+        and Rules.player_attack_damage(4, false, true) == 3
+        and Rules.player_attack_damage(4, true, true) == 18
+        and Rules.player_attack_damage(-1, false, false) == 8
     )
     if not passed:
         push_error("Defense drill scoring regression")
