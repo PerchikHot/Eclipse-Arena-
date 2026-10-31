@@ -10,3 +10,19 @@ static func defense_accuracy(parries: int, dodges: int, attempts: int) -> int:
         return 0
     var defended := maxi(0, parries) + maxi(0, dodges)
     return clampi(roundi(100.0 * float(defended) / float(attempts)), 0, 100)
+
+# A completed defense drill gets a reproducible rank. At least three dummy
+# attacks are required so a single lucky parry cannot earn an S grade.
+static func defense_challenge_grade(parries: int, dodges: int, attempts: int) -> String:
+    if attempts < 3:
+        return "—"
+    var accuracy := defense_accuracy(parries, dodges, attempts)
+    if accuracy >= 90:
+        return "S"
+    if accuracy >= 75:
+        return "A"
+    if accuracy >= 55:
+        return "B"
+    if accuracy >= 35:
+        return "C"
+    return "D"
