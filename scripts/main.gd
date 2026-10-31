@@ -125,6 +125,8 @@ var training_guard_button: Button
 var training_attack_button: Button
 var training_attack_label: Label
 var training_attack_enabled := false
+var training_attack_pace := 1 # 0 slow, 1 normal, 2 fast
+var training_pace_button: Button
 var training_attack_timer := 2.0
 var training_attack_windup := 0.0
 var training_range_label: Label
@@ -165,6 +167,9 @@ func _ready() -> void:
         if typeof(saved_duration) == TYPE_INT and saved_duration in [30, 60, 99, 120, 180]:
             round_duration = float(saved_duration)
         # The AI level is local to this device and does not alter save data.
+        var stored_training_pace = saved_settings.get_value("training", "attack_pace", 1)
+        if typeof(stored_training_pace) == TYPE_INT and stored_training_pace in [0, 1, 2]:
+            training_attack_pace = stored_training_pace
         var stored_difficulty = saved_settings.get_value("match", "ai_difficulty", 1)
         if typeof(stored_difficulty) == TYPE_INT and stored_difficulty in [0, 1, 2]:
             ai_difficulty = stored_difficulty
@@ -248,6 +253,12 @@ func _ready() -> void:
     training_attack_button.visible = false
     training_attack_button.pressed.connect(toggle_training_attacks)
     add_child(training_attack_button)
+    training_pace_button = Button.new()
+    training_pace_button.position = Vector2(515, 395)
+    training_pace_button.size = Vector2(250, 46)
+    training_pace_button.visible = false
+    training_pace_button.pressed.connect(cycle_training_attack_pace)
+    add_child(training_pace_button)
     training_attack_label = Label.new()
     training_attack_label.position = Vector2(780, 345)
     training_attack_label.size = Vector2(260, 38)
@@ -580,6 +591,7 @@ func show_selection() -> void:
     training_reset_button.visible = false
     training_guard_button.visible = false
     training_attack_button.visible = false
+    training_pace_button.visible = false
     training_attack_label.visible = false
     training_range_label.visible = false
     dash_queued = false
@@ -662,7 +674,7 @@ func select_fighter(index: int) -> void:
     draws = 0
     training_knockouts = 0
     training_guarded_hits = 0
-    training_attack_timer = 2.0
+    training_attack_timer = training_attack_interval()
     training_attack_windup = 0.0
     training_elapsed = 0.0
     training_hud_last = 0.0
@@ -792,6 +804,7 @@ func show_menu() -> void:
     training_reset_button.visible = false
     training_guard_button.visible = false
     training_attack_button.visible = false
+    training_pace_button.visible = false
     training_attack_label.visible = false
     training_range_label.visible = false
     pause_toggle_button.visible = false
@@ -834,11 +847,33 @@ func toggle_training_guard() -> void:
     training_guard_button.text = "ЩИТ МИШЕНИ: ВКЛ" if training_target_guarding else "ЩИТ МИШЕНИ: ВЫКЛ"
     play_sound("menu")
 
+func training_attack_interval() -> float:
+    return 4.0 if training_attack_pace == 0 else 1.5 if training_attack_pace == 2 else 2.5
+
+func training_attack_telegraph() -> float:
+    return 1.0 if training_attack_pace == 0 else 0.4 if training_attack_pace == 2 else 0.65
+
+func training_pace_caption() -> String:
+    return "ТЕМП МИШЕНИ: " + ["МЕДЛЕННЫЙ", "ОБЫЧНЫЙ", "БЫСТРЫЙ"][training_attack_pace]
+
+func cycle_training_attack_pace() -> void:
+    if not training_mode or in_menu or round_over or manual_paused:
+        return
+    training_attack_pace = (training_attack_pace + 1) % 3
+    training_pace_button.text = training_pace_caption()
+    training_attack_timer = training_attack_interval()
+    training_attack_windup = 0.0
+    var settings := ConfigFile.new()
+    settings.load("user://settings.cfg")
+    settings.set_value("training", "attack_pace", training_attack_pace)
+    settings.save("user://settings.cfg")
+    play_sound("menu")
+
 func toggle_training_attacks() -> void:
     if not training_mode or in_menu or round_over or manual_paused:
         return
     training_attack_enabled = not training_attack_enabled
-    training_attack_timer = 2.0
+    training_attack_timer = training_attack_interval()
     training_attack_windup = 0.0
     training_attack_button.text = "МИШЕНЬ АТАКУЕТ: ДА" if training_attack_enabled else "МИШЕНЬ АТАКУЕТ: НЕТ"
     training_attack_label.text = "Тренировка парирования" if training_attack_enabled else ""
@@ -886,6 +921,8 @@ func start_game() -> void:
     training_reset_button.visible = training_mode
     training_guard_button.visible = training_mode
     training_attack_button.visible = training_mode
+    training_pace_button.visible = training_mode
+    training_pace_button.text = training_pace_caption()
     training_attack_label.visible = training_mode
     training_range_label.visible = training_mode
     update_training_range()
@@ -971,7 +1008,7 @@ func restart_round() -> void:
     x_left = 300.0
     x_right = 900.0
     training_target_direction = 1.0
-    training_attack_timer = 2.0
+    training_attack_timer = training_attack_interval()
     training_attack_windup = 0.0
     y_left = 610.0
     velocity_y = 0.0
@@ -1171,6 +1208,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
         toggle_training_guard()
         get_viewport().set_input_as_handled()
         return
+    if event.keycode == KEY_B and training_mode and not manual_paused and not round_over:
+        cycle_training_attack_pace()
+        get_viewport().set_input_as_handled()
+        return
     if event.keycode == KEY_SHIFT and not manual_paused and not round_over:
         dash_queued = true
         get_viewport().set_input_as_handled()
@@ -1363,7 +1404,7 @@ func _process(delta: float) -> void:
             training_attack_label.text = "ЗАМАХ: %.1f с" % training_attack_windup
             if training_attack_windup <= 0.0:
                 enemy_attack_fx = 0.3
-                training_attack_timer = 2.5
+                training_attack_timer = training_attack_interval()
                 training_attack_label.text = "УДАР МИШЕНИ"
                 if dash_invulnerable <= 0.0 and absf(x_left - x_right) < 150.0 and absf(y_left - 610.0) < 120.0:
                     if block_timer > 0.0 and parry_window > 0.0:
@@ -1385,7 +1426,7 @@ func _process(delta: float) -> void:
             training_attack_timer -= delta
             training_attack_label.text = "АТАКА ЧЕРЕЗ: %.1f с" % maxf(0.0, training_attack_timer)
             if training_attack_timer <= 0.0 and absf(x_left - x_right) < 195.0:
-                training_attack_windup = 0.65
+                training_attack_windup = training_attack_telegraph()
     var skill_pressed: bool = held["SKILL"] or Input.is_key_pressed(KEY_L)
     var can_skill: bool = skill_pressed and skill_energy >= skill_cost
     if (hit_pressed or can_skill) and attack_cooldown <= 0 and block_timer <= 0.0:
