@@ -623,7 +623,9 @@ func select_fighter(index: int) -> void:
     enemy_wins = 0
     draws = 0
     training_knockouts = 0
-    score_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: 0" if training_mode else "ИГРОК 0 : 0 ПРОТИВНИК  •  НИЧЬИХ: 0"
+    training_elapsed = 0.0
+    training_hud_last = 0.0
+    score_label.text = "МИШЕНЕЙ: 0 • УРОН: 0 • DPS: 0" if training_mode else "ИГРОК 0 : 0 ПРОТИВНИК  •  НИЧЬИХ: 0"
     update_health_labels()
     selection_layer.visible = false
     restart_round()
