@@ -24,6 +24,11 @@ jobs:
           wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
           unzip -q Godot_v4.3-stable_export_templates.tpz
           cp templates/* "$HOME/.local/share/godot/export_templates/4.3.stable/"
+      - name: Generate Veyrion artwork before export
+        run: |
+          python3 -m pip install --quiet Pillow
+          python3 tools/build_icons.py
+          python3 tools/build_icons.py --verify
       - name: Import project and export Windows EXE
         run: |
           set -euo pipefail
@@ -32,6 +37,41 @@ jobs:
           mkdir -p build
           godot --headless --path . --export-release "Windows Desktop" build/EclipseArena.exe
           test -s build/EclipseArena.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EclipseArena-Windows-raw
+          path: build/EclipseArena.exe
+          if-no-files-found: error
+
+  windows-icon:
+    needs: windows
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: EclipseArena-Windows-raw
+          path: build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare approved ICO and rcedit
+        shell: pwsh
+        run: |
+          python -m pip install --quiet Pillow pefile
+          python tools/build_icons.py
+          python tools/build_icons.py --verify
+          Invoke-WebRequest 'https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x64.exe' -OutFile rcedit-x64.exe
+          $hash = (Get-FileHash rcedit-x64.exe -Algorithm SHA256).Hash
+          if ($hash -ne '3E7801DB1A5EDBEC91B49A24A094AAD776CB4515488EA5A4CA2289C400EADE2A') { throw 'rcedit checksum mismatch' }
+          $before = (Get-FileHash build/EclipseArena.exe -Algorithm SHA256).Hash
+          & .\\rcedit-x64.exe build/EclipseArena.exe --set-icon assets/EclipseArena.ico
+          if ($LASTEXITCODE -ne 0) { throw 'rcedit failed to embed icon' }
+          $after = (Get-FileHash build/EclipseArena.exe -Algorithm SHA256).Hash
+          if ($before -eq $after) { throw 'EXE was not modified' }
+          python -c "import pefile; p=pefile.PE(r'build/EclipseArena.exe'); assert any(e.id==14 for e in p.DIRECTORY_ENTRY_RESOURCE.entries)"
       - uses: actions/upload-artifact@v4
         with:
           name: EclipseArena-Windows-EXE

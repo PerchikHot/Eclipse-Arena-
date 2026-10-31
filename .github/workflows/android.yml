@@ -58,6 +58,11 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/eclipsearena-debug.keystore" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+      - name: Generate and verify Veyrion katana launcher artwork
+        run: |
+          python3 -m pip install --quiet Pillow
+          python3 tools/build_icons.py
+          python3 tools/build_icons.py --verify
       - name: Import project
         run: godot --headless --path . --editor --quit
       - name: Run combat rules smoke tests
@@ -71,6 +76,10 @@ jobs:
         run: |
           mkdir -p build
           godot --headless --path . --export-debug "Android" build/EclipseArena-debug.apk
+      - name: Verify Android package includes launcher artwork
+        run: |
+          test -s build/EclipseArena-debug.apk
+          unzip -l build/EclipseArena-debug.apk | grep -E "res/mipmap|res/drawable" >/dev/null
       - uses: actions/upload-artifact@v4
         with:
           name: EclipseArena-Android-debug
