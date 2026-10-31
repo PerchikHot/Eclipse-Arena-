@@ -26,3 +26,8 @@ static func defense_challenge_grade(parries: int, dodges: int, attempts: int) ->
     if accuracy >= 35:
         return "C"
     return "D"
+
+# A short or abandoned challenge is useful practice, but it must not replace
+# the saved personal record. This is shared by touch and keyboard builds.
+static func eligible_defense_record(completed: bool, attempts: int) -> bool:
+    return completed and attempts >= 3
