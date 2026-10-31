@@ -1574,10 +1574,11 @@ func _process(delta: float) -> void:
             skill_energy = minf(100.0, skill_energy + (0.0 if can_skill else 11.0))
             combo_timer = 1.3
             var hp_before_hit := hp_right
-            var attack_damage := 18 if can_skill else 8 + mini(combo_hits, 4)
-            # Practice ordinary hits against guard; specials break through.
-            if training_mode and training_target_guarding and not can_skill:
-                attack_damage = maxi(1, int(attack_damage / 4))
+            # Same tested damage rule for touch and keyboard combat.
+            var guarding_target := training_mode and training_target_guarding
+            var attack_damage := CombatRules.player_attack_damage(
+                combo_hits, can_skill, guarding_target)
+            if guarding_target and not can_skill:
                 training_guarded_hits += 1
             hp_right = maxi(0, hp_right - attack_damage)
             damage_dealt += hp_before_hit - hp_right
