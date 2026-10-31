@@ -1366,6 +1366,15 @@ func _process(delta: float) -> void:
             # training session; no training stats affect ranked records.
             var average_dps := 0.0 if training_elapsed <= 0.0 else float(damage_dealt) / training_elapsed
             score_label.text = "МИШЕНЕЙ: %d • УРОН: %d • DPS: %.1f • БЛОК: %d • ПАРИР: %d/%d • УКЛ: %d" % [training_knockouts, damage_dealt, average_dps, training_guarded_hits, successful_parries, training_attack_attempts, training_dodges]
+            if training_challenge_running:
+                # Live scoring helps players adjust timing during the 60s
+                # drill. Count only attacks actually attempted by the dummy.
+                var defended := successful_parries + training_dodges
+                var accuracy := 0 if training_attack_attempts == 0 else roundi(
+                    100.0 * float(defended) / float(training_attack_attempts))
+                score_label.text += " • ОЧКИ: %d • ЗАЩИТА: %d%%" % [
+                    successful_parries * 3 + training_dodges * 2,
+                    clampi(accuracy, 0, 100)]
             if training_challenge_result != "":
                 score_label.text += " • " + training_challenge_result
             update_training_range()
