@@ -134,6 +134,12 @@ var training_target_guarding := false
 var training_guarded_hits := 0
 var training_attack_attempts := 0
 var training_dodges := 0
+# Timed defensive drill is separate from ranked matches and their records.
+var training_challenge_button: Button
+var training_challenge_running := false
+var training_challenge_remaining := 60.0
+var training_challenge_best := 0
+var training_challenge_result := ""
 var timer_warning_active := false
 var final_countdown_active := false
 var has_game_focus := true
@@ -169,6 +175,9 @@ func _ready() -> void:
         if typeof(saved_duration) == TYPE_INT and saved_duration in [30, 60, 99, 120, 180]:
             round_duration = float(saved_duration)
         # The AI level is local to this device and does not alter save data.
+        var saved_challenge = saved_settings.get_value("training", "best_defense_60s", 0)
+        if typeof(saved_challenge) == TYPE_INT and saved_challenge >= 0 and saved_challenge <= 99999:
+            training_challenge_best = saved_challenge
         var stored_training_pace = saved_settings.get_value("training", "attack_pace", 1)
         if typeof(stored_training_pace) == TYPE_INT and stored_training_pace in [0, 1, 2]:
             training_attack_pace = stored_training_pace
@@ -261,6 +270,13 @@ func _ready() -> void:
     training_pace_button.visible = false
     training_pace_button.pressed.connect(cycle_training_attack_pace)
     add_child(training_pace_button)
+    training_challenge_button = Button.new()
+    training_challenge_button.position = Vector2(780, 395)
+    training_challenge_button.size = Vector2(260, 46)
+    training_challenge_button.visible = false
+    training_challenge_button.text = "ЗАЩИТА 60 С • СТАРТ"
+    training_challenge_button.pressed.connect(toggle_training_challenge)
+    add_child(training_challenge_button)
     training_attack_label = Label.new()
     training_attack_label.position = Vector2(780, 345)
     training_attack_label.size = Vector2(260, 38)
@@ -595,6 +611,7 @@ func show_selection() -> void:
     training_attack_button.visible = false
     training_pace_button.visible = false
     training_attack_label.visible = false
+    training_challenge_button.visible = false
     training_range_label.visible = false
     dash_queued = false
     preview_fighter(selection_choice)
@@ -678,6 +695,9 @@ func select_fighter(index: int) -> void:
     training_guarded_hits = 0
     training_attack_attempts = 0
     training_dodges = 0
+    training_challenge_running = false
+    training_challenge_remaining = 60.0
+    training_challenge_result = ""
     training_attack_timer = training_attack_interval()
     training_attack_windup = 0.0
     training_elapsed = 0.0
@@ -883,6 +903,44 @@ func toggle_training_attacks() -> void:
     training_attack_label.text = "Тренировка парирования" if training_attack_enabled else ""
     play_sound("menu")
 
+func toggle_training_challenge() -> void:
+    if not training_mode or in_menu or round_over or manual_paused:
+        return
+    if training_challenge_running:
+        finish_training_challenge(false)
+        return
+    # Start with fresh counters; keep normal training records separate.
+    reset_training_session()
+    training_challenge_running = true
+    training_challenge_remaining = 60.0
+    training_challenge_result = ""
+    training_attack_enabled = true
+    training_attack_timer = training_attack_interval()
+    training_attack_windup = 0.0
+    training_attack_button.text = "МИШЕНЬ АТАКУЕТ: ДА"
+    training_challenge_button.text = "ЗАЩИТА 60 С • ЗАВЕРШИТЬ"
+    play_sound("menu")
+
+func finish_training_challenge(completed: bool) -> void:
+    if not training_challenge_running:
+        return
+    training_challenge_running = false
+    training_attack_enabled = false
+    training_attack_windup = 0.0
+    training_attack_button.text = "МИШЕНЬ АТАКУЕТ: НЕТ"
+    training_challenge_button.text = "ЗАЩИТА 60 С • СТАРТ"
+    round_timer_label.text = "∞"
+    var score := successful_parries * 3 + training_dodges * 2
+    if completed and score > training_challenge_best:
+        training_challenge_best = score
+        var settings := ConfigFile.new()
+        settings.load("user://settings.cfg")
+        settings.set_value("training", "best_defense_60s", training_challenge_best)
+        settings.save("user://settings.cfg")
+    training_challenge_result = ("ИТОГ" if completed else "ПРЕРВАНО") + " • ЗАЩИТА: %d • РЕКОРД: %d" % [score, training_challenge_best]
+    training_attack_label.text = training_challenge_result
+    play_sound("victory" if completed else "menu")
+
 func toggle_training_target() -> void:
     if not training_mode or in_menu or round_over or manual_paused:
         return
@@ -907,6 +965,10 @@ func reset_training_session() -> void:
     training_guarded_hits = 0
     training_attack_attempts = 0
     training_dodges = 0
+    training_challenge_running = false
+    training_challenge_remaining = 60.0
+    training_challenge_result = ""
+    training_challenge_button.text = "ЗАЩИТА 60 С • СТАРТ"
     training_elapsed = 0.0
     training_hud_last = 0.0
     score_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: 0 • УРОН: 0 • DPS: 0 • БЛОК: 0 • ПАРИР: 0/0 • УКЛ: 0"
@@ -930,6 +992,7 @@ func start_game() -> void:
     training_pace_button.visible = training_mode
     training_pace_button.text = training_pace_caption()
     training_attack_label.visible = training_mode
+    training_challenge_button.visible = training_mode
     training_range_label.visible = training_mode
     update_training_range()
     training_target_button.text = training_target_caption()
@@ -1287,6 +1350,11 @@ func _process(delta: float) -> void:
     if round_over or in_menu or manual_paused or controls_help_label.visible or not has_game_focus:
         return
     if training_mode:
+        if training_challenge_running:
+            training_challenge_remaining = maxf(0.0, training_challenge_remaining - delta)
+            round_timer_label.text = str(ceili(training_challenge_remaining))
+            if training_challenge_remaining <= 0.0:
+                finish_training_challenge(true)
         training_elapsed += delta
         if training_elapsed - training_hud_last >= 0.5:
             training_hud_last = training_elapsed
@@ -1294,6 +1362,8 @@ func _process(delta: float) -> void:
             # training session; no training stats affect ranked records.
             var average_dps := 0.0 if training_elapsed <= 0.0 else float(damage_dealt) / training_elapsed
             score_label.text = "МИШЕНЕЙ: %d • УРОН: %d • DPS: %.1f • БЛОК: %d • ПАРИР: %d/%d • УКЛ: %d" % [training_knockouts, damage_dealt, average_dps, training_guarded_hits, successful_parries, training_attack_attempts, training_dodges]
+            if training_challenge_result != "":
+                score_label.text += " • " + training_challenge_result
             update_training_range()
     animation_clock += delta
     if not training_mode:
