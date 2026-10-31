@@ -562,6 +562,7 @@ func show_selection() -> void:
     training_target_button.visible = false
     training_reset_button.visible = false
     training_guard_button.visible = false
+    training_range_label.visible = false
     dash_queued = false
     preview_fighter(selection_choice)
 
