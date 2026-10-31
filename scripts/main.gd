@@ -943,7 +943,9 @@ func finish_training_challenge(completed: bool) -> void:
         settings.load("user://settings.cfg")
         settings.set_value("training", "best_defense_60s", training_challenge_best)
         settings.save("user://settings.cfg")
-    training_challenge_result = ("ИТОГ" if completed else "ПРЕРВАНО") + " • ЗАЩИТА: %d • РЕКОРД: %d" % [score, training_challenge_best]
+    var rank := CombatRules.defense_challenge_grade(
+        successful_parries, training_dodges, training_attack_attempts)
+    training_challenge_result = ("ИТОГ" if completed else "ПРЕРВАНО") + " • ЗАЩИТА: %d • РЕКОРД: %d • РАНГ: %s" % [score, training_challenge_best, rank]
     training_attack_label.text = training_challenge_result
     play_sound("victory" if completed else "menu")
 
