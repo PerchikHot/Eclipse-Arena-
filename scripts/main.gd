@@ -115,6 +115,7 @@ var training_target_moves := false
 var training_target_speed := 1 # 1 = slow, 2 = fast
 var training_target_direction := 1.0
 var training_target_button: Button
+var training_reset_button: Button
 var timer_warning_active := false
 var final_countdown_active := false
 var has_game_focus := true
@@ -211,6 +212,13 @@ func _ready() -> void:
     training_target_button.visible = false
     training_target_button.pressed.connect(toggle_training_target)
     add_child(training_target_button)
+    training_reset_button = Button.new()
+    training_reset_button.text = "СБРОС ТРЕНИРОВКИ" if OS.has_feature("mobile") else "СБРОС ТРЕНИРОВКИ (R)"
+    training_reset_button.position = Vector2(515, 191)
+    training_reset_button.size = Vector2(250, 46)
+    training_reset_button.visible = false
+    training_reset_button.pressed.connect(reset_training_session)
+    add_child(training_reset_button)
     player_name_label = Label.new()
     player_name_label.position = Vector2(55, 10)
     player_name_label.add_theme_font_size_override("font_size", 20)
@@ -522,6 +530,7 @@ func show_selection() -> void:
     selection_layer.visible = true
     dash_button.visible = false
     training_target_button.visible = false
+    training_reset_button.visible = false
     dash_queued = false
     preview_fighter(selection_choice)
 
@@ -716,6 +725,7 @@ func show_menu() -> void:
     pause_button.visible = false
     dash_button.visible = false
     training_target_button.visible = false
+    training_reset_button.visible = false
     pause_toggle_button.visible = false
     controls_help_button.visible = false
     cooldown_label.visible = false
@@ -750,6 +760,16 @@ func toggle_training_target() -> void:
     training_target_button.text = training_target_caption()
     play_sound("menu")
 
+# Reset the entire training drill without changing the chosen fighter or
+# accidentally modifying ranked combo records.
+func reset_training_session() -> void:
+    if not training_mode or in_menu or manual_paused or round_over:
+        return
+    training_knockouts = 0
+    score_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: 0"
+    restart_round()
+    play_sound("menu")
+
 func start_game() -> void:
     controls_help_label.visible = false
     play_sound("menu")
@@ -761,6 +781,7 @@ func start_game() -> void:
     pause_button.visible = true
     dash_button.visible = true
     training_target_button.visible = training_mode
+    training_reset_button.visible = training_mode
     training_target_button.text = training_target_caption()
     pause_toggle_button.visible = true
     controls_help_button.visible = true
@@ -1024,6 +1045,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
         get_viewport().set_input_as_handled()
         return
     if in_menu:
+        return
+    if event.keycode == KEY_R and training_mode and not manual_paused and not round_over:
+        reset_training_session()
+        get_viewport().set_input_as_handled()
         return
     if event.keycode == KEY_T and training_mode and not manual_paused and not round_over:
         toggle_training_target()
