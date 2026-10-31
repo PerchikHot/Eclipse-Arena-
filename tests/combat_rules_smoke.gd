@@ -21,6 +21,11 @@ func _initialize() -> void:
         and not Rules.eligible_defense_record(true, 2)
         and Rules.eligible_defense_record(true, 3)
         and Rules.eligible_defense_record(true, 10)
+        and Rules.next_defense_streak(0, true) == 1
+        and Rules.next_defense_streak(3, true) == 4
+        and Rules.next_defense_streak(4, false) == 0
+        and Rules.next_defense_streak(-1, true) == 1
+        and Rules.next_defense_streak(99999, true) == 99999
     )
     if not passed:
         push_error("Defense drill scoring regression")
