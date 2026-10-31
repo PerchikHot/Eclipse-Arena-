@@ -17,6 +17,10 @@ func _initialize() -> void:
         and Rules.defense_challenge_grade(3, 0, 5) == "B"
         and Rules.defense_challenge_grade(2, 0, 5) == "C"
         and Rules.defense_challenge_grade(0, 0, 5) == "D"
+        and not Rules.eligible_defense_record(false, 10)
+        and not Rules.eligible_defense_record(true, 2)
+        and Rules.eligible_defense_record(true, 3)
+        and Rules.eligible_defense_record(true, 10)
     )
     if not passed:
         push_error("Defense drill scoring regression")
