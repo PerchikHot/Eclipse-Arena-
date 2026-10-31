@@ -136,6 +136,9 @@ var training_target_guarding := false
 var training_guarded_hits := 0
 var training_attack_attempts := 0
 var training_dodges := 0
+var training_defense_streak := 0
+var training_best_defense_streak := 0
+var training_challenge_best_streak := 0
 # Timed defensive drill is separate from ranked matches and their records.
 var training_challenge_button: Button
 var training_challenge_running := false
@@ -180,6 +183,9 @@ func _ready() -> void:
         var saved_challenge = saved_settings.get_value("training", "best_defense_60s", 0)
         if typeof(saved_challenge) == TYPE_INT and saved_challenge >= 0 and saved_challenge <= 99999:
             training_challenge_best = saved_challenge
+        var saved_streak = saved_settings.get_value("training", "best_defense_streak", 0)
+        if typeof(saved_streak) == TYPE_INT and saved_streak >= 0 and saved_streak <= 99999:
+            training_challenge_best_streak = saved_streak
         var stored_training_pace = saved_settings.get_value("training", "attack_pace", 1)
         if typeof(stored_training_pace) == TYPE_INT and stored_training_pace in [0, 1, 2]:
             training_attack_pace = stored_training_pace
@@ -698,6 +704,8 @@ func select_fighter(index: int) -> void:
     training_guarded_hits = 0
     training_attack_attempts = 0
     training_dodges = 0
+    training_defense_streak = 0
+    training_best_defense_streak = 0
     training_challenge_running = false
     training_challenge_remaining = 60.0
     training_challenge_result = ""
@@ -944,17 +952,23 @@ func finish_training_challenge(completed: bool) -> void:
     var score := CombatRules.defense_challenge_score(successful_parries, training_dodges)
     var eligible := CombatRules.eligible_defense_record(
         completed, training_attack_attempts)
-    if eligible and score > training_challenge_best:
-        training_challenge_best = score
+    if eligible and (score > training_challenge_best or
+            training_best_defense_streak > training_challenge_best_streak):
+        training_challenge_best = maxi(training_challenge_best, score)
+        training_challenge_best_streak = maxi(
+            training_challenge_best_streak, training_best_defense_streak)
         var settings := ConfigFile.new()
         settings.load("user://settings.cfg")
         settings.set_value("training", "best_defense_60s", training_challenge_best)
+        settings.set_value("training", "best_defense_streak", training_challenge_best_streak)
         settings.save("user://settings.cfg")
     var rank := CombatRules.defense_challenge_grade(
         successful_parries, training_dodges, training_attack_attempts)
     var result_title := "ПРЕРВАНО" if not completed else (
         "ИТОГ" if eligible else "НЕ ЗАЧТЕНО (меньше 3 атак)")
-    training_challenge_result = result_title + " • ЗАЩИТА: %d • РЕКОРД: %d • РАНГ: %s" % [score, training_challenge_best, rank]
+    training_challenge_result = result_title + " • ЗАЩИТА: %d • РЕКОРД: %d • РАНГ: %s • СЕРИЯ: %d (рекорд %d)" % [
+        score, training_challenge_best, rank,
+        training_best_defense_streak, training_challenge_best_streak]
     training_attack_label.text = training_challenge_result
     play_sound("victory" if completed else "menu")
 
@@ -1384,9 +1398,9 @@ func _process(delta: float) -> void:
                 # drill. Count only attacks actually attempted by the dummy.
                 var accuracy := CombatRules.defense_accuracy(
                     successful_parries, training_dodges, training_attack_attempts)
-                score_label.text += " • ОЧКИ: %d • ЗАЩИТА: %d%%" % [
+                score_label.text += " • ОЧКИ: %d • ЗАЩИТА: %d%% • СЕРИЯ: %d" % [
                     CombatRules.defense_challenge_score(successful_parries, training_dodges),
-                    accuracy]
+                    accuracy, training_defense_streak]
             if training_challenge_result != "":
                 score_label.text += " • " + training_challenge_result
             update_training_range()
@@ -1511,6 +1525,8 @@ func _process(delta: float) -> void:
                 training_attack_label.text = "УДАР МИШЕНИ"
                 if absf(x_left - x_right) < 150.0 and absf(y_left - 610.0) < 120.0:
                     training_attack_attempts += 1
+                    var defended := dash_invulnerable > 0.0 or (
+                        block_timer > 0.0 and parry_window > 0.0)
                     if dash_invulnerable > 0.0:
                         training_dodges += 1
                         training_attack_label.text = "УКЛОНЕНИЕ: %d" % training_dodges
@@ -1529,6 +1545,10 @@ func _process(delta: float) -> void:
                         player_hit_fx = 0.2
                         play_sound("hit")
                         update_health_labels()
+                    training_defense_streak = CombatRules.next_defense_streak(
+                        training_defense_streak, defended)
+                    training_best_defense_streak = maxi(
+                        training_best_defense_streak, training_defense_streak)
         else:
             training_attack_timer -= delta
             training_attack_label.text = "АТАКА ЧЕРЕЗ: %.1f с" % maxf(0.0, training_attack_timer)
