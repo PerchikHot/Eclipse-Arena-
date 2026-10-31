@@ -52,6 +52,9 @@ var fighter_colors := [Color("#f0eceb"), Color("#b73545"), Color("#1c263f"), Col
 var fighter_hair := [Color("#e5f8ff"), Color("#a92736"), Color("#edcf86"), Color("#b7283f")]
 var selected_fighter := 0
 var enemy_fighter := 1
+# -1 = random rival; otherwise the selected fighter index (mirror matches allowed).
+var selected_opponent := -1
+var opponent_button: Button
 var selection_layer: Control
 var selection_title: Label
 var selection_buttons: Array[Button] = []
@@ -143,6 +146,9 @@ func _ready() -> void:
             selection_choice = clampi(stored_fighter, 0, fighter_names.size() - 1)
         if typeof(stored_costume) == TYPE_INT:
             selected_costume = clampi(stored_costume, 0, costume_names.size() - 1)
+        var stored_opponent = saved_settings.get_value("selection", "opponent", -1)
+        if typeof(stored_opponent) == TYPE_INT and stored_opponent >= -1 and stored_opponent < fighter_names.size():
+            selected_opponent = stored_opponent
         # Older saves default to the original 99-second round; new presets are optional.
         var saved_duration = saved_settings.get_value("match", "duration", 99)
         if typeof(saved_duration) == TYPE_INT and saved_duration in [30, 60, 99, 120, 180]:
@@ -487,6 +493,11 @@ func _ready() -> void:
     costume_button.size = Vector2(245, 56)
     costume_button.pressed.connect(cycle_costume)
     selection_layer.add_child(costume_button)
+    opponent_button = Button.new()
+    opponent_button.position = Vector2(600, 600)
+    opponent_button.size = Vector2(245, 55)
+    opponent_button.pressed.connect(cycle_opponent)
+    selection_layer.add_child(opponent_button)
     var confirm_button := Button.new()
     confirm_button.text = "В БОЙ"
     confirm_button.position = Vector2(930, 620)
@@ -502,12 +513,12 @@ func _ready() -> void:
     personal_record_label.add_theme_color_override("font_color", Color("#80d9ff"))
     selection_layer.add_child(personal_record_label)
     var selection_hint := Label.new()
-    selection_hint.text = "ВЫБЕРИ ГЕРОИНЮ — ПРОТИВНИК БУДЕТ ВЫБРАН АВТОМАТИЧЕСКИ"
+    selection_hint.text = "ВЫБЕРИ БОЙЦА И СОПЕРНИКА — СЛУЧАЙНЫЙ ИЛИ КОНКРЕТНЫЙ"
     selection_hint.position = Vector2(95, 150)
     selection_hint.add_theme_font_size_override("font_size", 22)
     selection_layer.add_child(selection_hint)
     var selection_controls := Label.new()
-    selection_controls.text = "ПК: ←/→ ВЫБОР • C КОСТЮМ • ENTER В БОЙ • ESC НАЗАД"
+    selection_controls.text = "ПК: ←/→ БОЕЦ • C КОСТЮМ • O СОПЕРНИК • ENTER В БОЙ • ESC НАЗАД"
     selection_controls.position = Vector2(95, 188)
     selection_controls.add_theme_font_size_override("font_size", 17)
     selection_layer.add_child(selection_controls)
@@ -539,6 +550,7 @@ func preview_fighter(index: int) -> void:
     selection_preview.texture = fighter_textures[index]
     selection_name.text = fighter_names[index]
     costume_button.text = "КОСТЮМ: " + costume_names[selected_costume]
+    opponent_button.text = "СОПЕРНИК: " + ("СЛУЧАЙНЫЙ" if selected_opponent < 0 else fighter_names[selected_opponent])
     # Reflect the restored costume immediately on the selection screen.
     selection_preview.modulate = Color.WHITE if selected_costume == 0 else Color("#c9d7ff") if selected_costume == 1 else Color("#ffc4d9")
     for i in range(selection_buttons.size()):
@@ -550,6 +562,7 @@ func save_selection_preferences() -> void:
     settings.load("user://settings.cfg")
     settings.set_value("selection", "fighter", selection_choice)
     settings.set_value("selection", "costume", selected_costume)
+    settings.set_value("selection", "opponent", selected_opponent)
     settings.save("user://settings.cfg")
 
 # Match length is a local preference; changing it affects the next round only.
@@ -591,11 +604,17 @@ func cycle_costume() -> void:
     save_selection_preferences()
     play_sound("menu")
 
+func cycle_opponent() -> void:
+    selected_opponent = (selected_opponent + 2) % (fighter_names.size() + 1) - 1
+    opponent_button.text = "СОПЕРНИК: " + ("СЛУЧАЙНЫЙ" if selected_opponent < 0 else fighter_names[selected_opponent])
+    save_selection_preferences()
+    play_sound("menu")
+
 func select_fighter(index: int) -> void:
     selected_fighter = index
     selection_choice = index
     save_selection_preferences()
-    enemy_fighter = (index + randi_range(1, 3)) % fighter_names.size()
+    enemy_fighter = selected_opponent if selected_opponent >= 0 else (index + randi_range(1, 3)) % fighter_names.size()
     # Choosing a fighter starts a new match. Never carry a previous
     # character's wins, losses or draws into the next match.
     player_wins = 0
@@ -1082,6 +1101,8 @@ func _input(event: InputEvent) -> void:
                 preview_fighter((selection_choice + 1) % fighter_names.size())
             KEY_C:
                 cycle_costume()
+            KEY_O:
+                cycle_opponent()
             KEY_ENTER, KEY_KP_ENTER:
                 select_fighter(selection_choice)
             KEY_ESCAPE:
