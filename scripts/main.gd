@@ -883,6 +883,8 @@ func training_pace_caption() -> String:
 func cycle_training_attack_pace() -> void:
     if not training_mode or in_menu or round_over or manual_paused:
         return
+    if training_challenge_running:
+        return
     training_attack_pace = (training_attack_pace + 1) % 3
     training_pace_button.text = training_pace_caption()
     training_attack_timer = training_attack_interval()
@@ -896,6 +898,8 @@ func cycle_training_attack_pace() -> void:
 func toggle_training_attacks() -> void:
     if not training_mode or in_menu or round_over or manual_paused:
         return
+    if training_challenge_running:
+        return # Keep the 60-second drill's attack pattern fixed.
     training_attack_enabled = not training_attack_enabled
     training_attack_timer = training_attack_interval()
     training_attack_windup = 0.0
