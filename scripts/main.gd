@@ -78,6 +78,8 @@ var hits_landed := 0
 var attacks_attempted := 0
 var hits_received := 0
 var blocked_hits := 0
+var guard_breaks := 0
+var guard_break_flash := 0.0
 var combo_timer := 0.0
 var block_timer := 0.0
 # Guard cannot be held indefinitely: it must recover after exhaustion.
@@ -811,6 +813,8 @@ func restart_round() -> void:
     attacks_attempted = 0
     hits_received = 0
     blocked_hits = 0
+    guard_breaks = 0
+    guard_break_flash = 0.0
     update_accuracy_label()
     combo_timer = 0.0
     block_timer = 0.0
@@ -875,7 +879,7 @@ func finish_round(outcome: int) -> void:
     result_label.text += "\nВРЕМЯ БОЯ: %d / %d сек" % [elapsed_seconds, int(round_duration)]
     result_label.text += "\nHP: %d / %d" % [hp_left, hp_right]
     result_label.text += "\nУРОН: %d нанесено / %d получено" % [damage_dealt, damage_taken]
-    result_label.text += "\nПОПАДАНИЯ: %d / %d  •  БЛОК: %d" % [hits_landed, hits_received, blocked_hits]
+    result_label.text += "\nПОПАДАНИЯ: %d / %d  •  БЛОК: %d  •  ПРОБОЕВ: %d" % [hits_landed, hits_received, blocked_hits, guard_breaks]
     # Accuracy is based on actual attacks, not key presses during cooldown.
     # No attacks means no accuracy measurement, not a 0% miss rate.
     if attacks_attempted == 0:
@@ -1072,6 +1076,7 @@ func _process(delta: float) -> void:
     impact_flash = maxf(0.0, impact_flash - delta)
     combo_timer = maxf(0.0, combo_timer - delta)
     block_timer = maxf(0.0, block_timer - delta)
+    guard_break_flash = maxf(0.0, guard_break_flash - delta)
     if combo_timer <= 0.0 and combo_hits != 0:
         combo_hits = 0
         update_accuracy_label()
@@ -1194,11 +1199,25 @@ func _process(delta: float) -> void:
                     impact_flash = 0.15
                     play_sound("hit")
                     var hp_before_enemy_hit := hp_left
-                    hp_left = maxi(0, hp_left - ((4 if enemy_pending_special else 2) if block_timer > 0.0 else (15 if enemy_pending_special else 7)))
+                    var was_blocking := block_timer > 0.0
+                    var guard_broken := false
+                    if was_blocking:
+                        blocked_hits += 1
+                        # Blocking a real hit costs additional stamina. A
+                        # special attack is much harder to absorb than a jab.
+                        guard_stamina = maxf(0.0, guard_stamina - (42.0 if enemy_pending_special else 18.0))
+                        if guard_stamina <= 0.0:
+                            guard_exhausted = true
+                            guard_broken = true
+                            guard_breaks += 1
+                            guard_break_flash = 1.25
+                            block_timer = 0.0
+                    var enemy_damage := 15 if enemy_pending_special else 7
+                    if was_blocking:
+                        enemy_damage = (10 if enemy_pending_special else 5) if guard_broken else (4 if enemy_pending_special else 2)
+                    hp_left = maxi(0, hp_left - enemy_damage)
                     damage_taken += hp_before_enemy_hit - hp_left
                     hits_received += 1
-                    if block_timer > 0.0:
-                        blocked_hits += 1
                     combo_hits = 0
                     combo_timer = 0.0
                     update_accuracy_label()
@@ -1218,7 +1237,7 @@ func _process(delta: float) -> void:
     # Communicate when the special attack is usable and when blocking is active.
     skill_label.text = ("СПЕЦ ГОТОВ %d/100" if skill_energy >= skill_cost else "ЭНЕРГИЯ %d/100") % int(skill_energy)
     update_enemy_energy_label()
-    cooldown_label.text = ("РЫВОК %.1fс • " % dash_cooldown if dash_cooldown > 0.0 else "РЫВОК ГОТОВ • ") + ("⚠ ВРАГ ГОТОВИТ УДАР!  " if enemy_windup > 0.0 else "") + ("ЩИТ ИСТОЩЕН • " if guard_exhausted else "ЩИТ %d/100 • " % int(guard_stamina)) + ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
+    cooldown_label.text = ("РЫВОК %.1fс • " % dash_cooldown if dash_cooldown > 0.0 else "РЫВОК ГОТОВ • ") + ("⚡ ПРОБИТ БЛОК! • " if guard_break_flash > 0.0 else "") + ("⚠ ВРАГ ГОТОВИТ УДАР!  " if enemy_windup > 0.0 else "") + ("ЩИТ ИСТОЩЕН • " if guard_exhausted else "ЩИТ %d/100 • " % int(guard_stamina)) + ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
     update_health_labels()
     queue_redraw()
 
