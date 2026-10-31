@@ -113,6 +113,8 @@ var match_target_wins := 2 # 0 = endless rounds
 var match_finished := false
 var training_mode := false
 var training_knockouts := 0
+var training_elapsed := 0.0
+var training_hud_last := 0.0
 # Optional moving target for practicing spacing; it never attacks.
 var training_target_moves := false
 var training_target_speed := 1 # 1 = slow, 2 = fast
@@ -785,7 +787,9 @@ func reset_training_session() -> void:
     if not training_mode or in_menu or manual_paused or round_over:
         return
     training_knockouts = 0
-    score_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: 0"
+    training_elapsed = 0.0
+    training_hud_last = 0.0
+    score_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: 0 • УРОН: 0 • DPS: 0"
     restart_round()
     play_sound("menu")
 
@@ -1139,6 +1143,14 @@ func _process(delta: float) -> void:
     # Android notification interruptions.
     if round_over or in_menu or manual_paused or controls_help_label.visible or not has_game_focus:
         return
+    if training_mode:
+        training_elapsed += delta
+        if training_elapsed - training_hud_last >= 0.5:
+            training_hud_last = training_elapsed
+            # The damage total survives dummy respawns but resets with the
+            # training session; no training stats affect ranked records.
+            var average_dps := 0.0 if training_elapsed <= 0.0 else float(damage_dealt) / training_elapsed
+            score_label.text = "МИШЕНЕЙ: %d • УРОН: %d • DPS: %.1f" % [training_knockouts, damage_dealt, average_dps]
     animation_clock += delta
     if not training_mode:
         round_seconds = maxf(0.0, round_seconds - delta)
@@ -1280,7 +1292,7 @@ func _process(delta: float) -> void:
                     hp_right = 100
                     enemy_energy = 0.0
                     round_number_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: %d" % training_knockouts
-                    score_label.text = "ТРЕНИРОВКА • МИШЕНЕЙ: %d" % training_knockouts
+                    score_label.text = "МИШЕНЕЙ: %d • УРОН: %d • DPS: %.1f" % [training_knockouts, damage_dealt, float(damage_dealt) / maxf(0.1, training_elapsed)]
                 else:
                     finish_round(1)
                     return
