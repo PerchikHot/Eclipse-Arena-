@@ -112,6 +112,7 @@ var training_mode := false
 var training_knockouts := 0
 # Optional moving target for practicing spacing; it never attacks.
 var training_target_moves := false
+var training_target_speed := 1 # 1 = slow, 2 = fast
 var training_target_direction := 1.0
 var training_target_button: Button
 var timer_warning_active := false
@@ -729,11 +730,24 @@ func show_menu() -> void:
     change_fighter_button.visible = false
     result_label.visible = false
 
+func training_target_caption() -> String:
+    if not training_target_moves:
+        return "МИШЕНЬ: СТОИТ"
+    return "МИШЕНЬ: БЫСТРО" if training_target_speed == 2 else "МИШЕНЬ: МЕДЛЕННО"
+
 func toggle_training_target() -> void:
     if not training_mode or in_menu or round_over or manual_paused:
         return
-    training_target_moves = not training_target_moves
-    training_target_button.text = "МИШЕНЬ: ДВИЖЕТСЯ" if training_target_moves else "МИШЕНЬ: СТОИТ"
+    # Cycle stationary -> slow -> fast -> stationary for a repeatable
+    # spacing drill on keyboard and touch devices.
+    if not training_target_moves:
+        training_target_moves = true
+        training_target_speed = 1
+    elif training_target_speed == 1:
+        training_target_speed = 2
+    else:
+        training_target_moves = false
+    training_target_button.text = training_target_caption()
     play_sound("menu")
 
 func start_game() -> void:
@@ -747,7 +761,7 @@ func start_game() -> void:
     pause_button.visible = true
     dash_button.visible = true
     training_target_button.visible = training_mode
-    training_target_button.text = "МИШЕНЬ: ДВИЖЕТСЯ" if training_target_moves else "МИШЕНЬ: СТОИТ"
+    training_target_button.text = training_target_caption()
     pause_toggle_button.visible = true
     controls_help_button.visible = true
     cooldown_label.visible = true
@@ -1180,7 +1194,7 @@ func _process(delta: float) -> void:
     # A reversible training drill: practice timing against a moving target
     # without enabling AI attacks, a timer, or ranked combo records.
     if training_mode and training_target_moves:
-        x_right += training_target_direction * 135.0 * delta
+        x_right += training_target_direction * (240.0 if training_target_speed == 2 else 90.0) * delta
         if x_right >= 1060.0:
             x_right = 1060.0
             training_target_direction = -1.0
