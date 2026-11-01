@@ -134,3 +134,13 @@ static func guard_readiness_label(stamina: float, exhausted: bool) -> String:
     if percent < 20:
         return "ЗАЩИТА: МАЛО %d%%" % percent
     return "ЗАЩИТА: %d%%" % percent
+
+# A text companion to HP bars for small screens and color-blind players.
+# Positive values mean the player leads; never modify combat calculations.
+static func health_advantage_label(player_hp: int, enemy_hp: int) -> String:
+    var difference := clampi(player_hp, 0, 100) - clampi(enemy_hp, 0, 100)
+    if difference == 0:
+        return "HP: РАВНО"
+    if difference > 0:
+        return "HP: ПРЕИМУЩЕСТВО +%d" % difference
+    return "HP: ОТСТАВАНИЕ %d" % -difference
