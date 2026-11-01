@@ -54,3 +54,19 @@ static func player_attack_damage(combo_hits: int, special: bool, target_guarding
         return 18
     var base := 8 + mini(maxi(combo_hits, 0), 4)
     return maxi(1, int(base / 4)) if target_guarding else base
+
+# Persistent ranked round history (wins, losses, draws), separate from
+# practice drills. Clamp corrupted save values and prevent counter overflow.
+static func next_career_record(record: Vector3i, outcome: int) -> Vector3i:
+    var safe := Vector3i(
+        clampi(record.x, 0, 99999),
+        clampi(record.y, 0, 99999),
+        clampi(record.z, 0, 99999)
+    )
+    if outcome > 0:
+        safe.x = mini(99999, safe.x + 1)
+    elif outcome < 0:
+        safe.y = mini(99999, safe.y + 1)
+    else:
+        safe.z = mini(99999, safe.z + 1)
+    return safe
