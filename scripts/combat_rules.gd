@@ -82,3 +82,30 @@ static func career_win_rate(record: Vector3i) -> int:
     if total == 0:
         return 0
     return clampi(roundi(100.0 * float(wins) / float(total)), 0, 100)
+
+
+# A visible round rating encourages precise attacks and timely defense.
+# Pure and platform-independent: damage, hit count and parries are the
+# already recorded match statistics. Never awards currency or changes saves.
+static func round_performance_score(outcome: int, landed: int, attempted: int,
+        dealt: int, taken: int, parries: int) -> int:
+    var accuracy := 0
+    if attempted > 0:
+        accuracy = clampi(roundi(100.0 * float(maxi(0, landed)) / float(attempted)), 0, 100)
+    var margin := clampi(dealt - taken, -100, 100)
+    var victory_bonus := 25 if outcome > 0 else (10 if outcome == 0 else 0)
+    return clampi(roundi(float(accuracy) * 0.55 + float(margin) * 0.2 +
+        float(clampi(parries, 0, 5)) * 4.0) + victory_bonus, 0, 100)
+
+static func round_performance_grade(outcome: int, landed: int, attempted: int,
+        dealt: int, taken: int, parries: int) -> String:
+    var score := round_performance_score(outcome, landed, attempted, dealt, taken, parries)
+    if score >= 90:
+        return "S"
+    if score >= 70:
+        return "A"
+    if score >= 50:
+        return "B"
+    if score >= 30:
+        return "C"
+    return "D"

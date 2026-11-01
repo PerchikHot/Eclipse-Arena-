@@ -1252,6 +1252,15 @@ func finish_round(outcome: int) -> void:
         result_label.text += "\nТОЧНОСТЬ: %d%% (%d из %d)" % [accuracy, hits_landed, attacks_attempted]
     if best_combo > 1:
         result_label.text += "\nКОМБО: %d  •  ЛИЧНЫЙ РЕКОРД: %d" % [best_combo, personal_best_combo]
+    # A match-only rating is visible on both Android and Windows, never
+    # mixed with saved career wins or the training challenge.
+    var performance := CombatRules.round_performance_score(outcome,
+        hits_landed, attacks_attempted, damage_dealt, damage_taken, successful_parries)
+    var grade := CombatRules.round_performance_grade(outcome,
+        hits_landed, attacks_attempted, damage_dealt, damage_taken, successful_parries)
+    result_label.text += "\n✦ РЕЙТИНГ БОЯ: %s  •  %d/100" % [grade, performance]
+    result_label.add_theme_color_override("font_color",
+        Color("#ffe08c") if grade in ["S", "A"] else Color("#c3dcff"))
     # Ranked career stats persist between sessions, but training never
     # enters finish_round. Save once at the end, not after each hit.
     career_record = CombatRules.next_career_record(career_record, outcome)

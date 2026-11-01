@@ -52,5 +52,13 @@ func _initialize() -> void:
         push_error("Defense drill scoring regression")
         quit(1)
         return
+    assert(
+        Rules.round_performance_score(1, 10, 10, 100, 0, 5) == 100
+        and Rules.round_performance_grade(1, 10, 10, 100, 0, 5) == "S"
+        and Rules.round_performance_grade(-1, 0, 0, 0, 100, 0) == "D"
+        and Rules.round_performance_score(0, 0, 0, 0, 0, 0) == 10
+        and Rules.round_performance_score(1, 100, 1, 0, 0, -4) <= 100
+        and Rules.round_performance_score(1, 0, -1, 0, 0, 0) == 25
+    )
     print("Combat rules smoke tests passed")
     quit(0)
