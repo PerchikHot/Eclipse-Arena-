@@ -59,6 +59,11 @@ func _initialize() -> void:
         and Rules.round_performance_score(0, 0, 0, 0, 0, 0) == 10
         and Rules.round_performance_score(1, 100, 1, 0, 0, -4) <= 100
         and Rules.round_performance_score(1, 0, -1, 0, 0, 0) == 25
+        and Rules.round_training_tip(0, 0, 0, 0, 0).begins_with("СОВЕТ:")
+        and Rules.round_training_tip(1, 5, 5, 0, 0).contains("дистанцию")
+        and Rules.round_training_tip(4, 5, 10, 20, 1).contains("уклоняйся")
+        and Rules.round_training_tip(4, 5, 20, 5, 0).contains("парирование")
+        and Rules.round_training_tip(4, 5, 20, 5, 2).begins_with("ОТЛИЧНО:")
     )
     print("Combat rules smoke tests passed")
     quit(0)
