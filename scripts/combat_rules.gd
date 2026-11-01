@@ -123,3 +123,14 @@ static func round_training_tip(landed: int, attempted: int, dealt: int,
     if parries <= 0:
         return "СОВЕТ: попробуй парирование перед контратакой."
     return "ОТЛИЧНО: сочетай парирование, комбо и спецприёмы."
+
+
+# Readable guard-stamina state for the battle HUD, including accessibility
+# when the small stamina bar is hard to see on an Android display.
+static func guard_readiness_label(stamina: float, exhausted: bool) -> String:
+    if exhausted:
+        return "ЗАЩИТА: ПЕРЕГРЕВ"
+    var percent := clampi(roundi(stamina), 0, 100)
+    if percent < 20:
+        return "ЗАЩИТА: МАЛО %d%%" % percent
+    return "ЗАЩИТА: %d%%" % percent
