@@ -97,7 +97,7 @@ func _initialize() -> void:
         and Rules.level_damage(8, 0) == 8
         and Rules.level_damage(8, -1) == 6
     )
-    for viewport in [Vector2(360, 640), Vector2(480, 800), Vector2(1280, 720)]:
+    for viewport in [Vector2(320, 240), Vector2(640, 360), Vector2(800, 360), Vector2(360, 640), Vector2(480, 800), Vector2(1280, 720)]:
         var rects := Rules.result_overlay_rects(viewport)
         var panel: Rect2 = rects["panel"]
         var change: Rect2 = rects["change"]
