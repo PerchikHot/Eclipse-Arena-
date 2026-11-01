@@ -107,6 +107,7 @@ var skill_cost := 40.0
 var enemy_energy := 0.0
 var enemy_skill_fx := 0.0
 var skill_label: Label
+var guard_status_label: Label
 var enemy_energy_label: Label
 var round_duration := 99.0
 var round_seconds := 99.0
@@ -381,6 +382,12 @@ func _ready() -> void:
     cooldown_label.position = Vector2(640, 650)
     cooldown_label.add_theme_font_size_override("font_size", 17)
     add_child(cooldown_label)
+    guard_status_label = Label.new()
+    guard_status_label.position = Vector2(35, 112)
+    guard_status_label.add_theme_font_size_override("font_size", 12)
+    guard_status_label.add_theme_color_override("font_color", Color("#80d9ff"))
+    guard_status_label.text = CombatRules.guard_readiness_label(100.0, false)
+    add_child(guard_status_label)
     # Live accuracy feedback during the round, not only on the result screen.
     accuracy_label = Label.new()
     # Two-line adaptive combat stats avoid clipping combos on small screens.
@@ -1183,6 +1190,7 @@ func restart_round() -> void:
     block_timer = 0.0
     guard_stamina = 100.0
     guard_exhausted = false
+    guard_status_label.text = CombatRules.guard_readiness_label(guard_stamina, false)
     dash_cooldown = 0.0
     dash_invulnerable = 0.0
     dash_queued = false
@@ -1738,6 +1746,9 @@ func _process(delta: float) -> void:
             enemy_cooldown = (1.3 if enemy_pending_special else 0.95) * [1.35, 1.0, 0.78][ai_difficulty]
     # Communicate when the special attack is usable and when blocking is active.
     skill_label.text = ("СПЕЦ ГОТОВ %d/100" if skill_energy >= skill_cost else "ЭНЕРГИЯ %d/100") % int(skill_energy)
+    guard_status_label.text = CombatRules.guard_readiness_label(guard_stamina, guard_exhausted)
+    guard_status_label.add_theme_color_override("font_color",
+        Color("#ff737e") if guard_exhausted or guard_stamina < 20.0 else Color("#80d9ff"))
     update_enemy_energy_label()
     cooldown_label.text = ("РЫВОК %.1fс • " % dash_cooldown if dash_cooldown > 0.0 else "РЫВОК ГОТОВ • ") + ("✦ ПАРИРОВАНИЕ! • " if parry_window > 0.0 else "") + ("⚡ ПРОБИТ БЛОК! • " if guard_break_flash > 0.0 else "") + ("⚠ ВРАГ ГОТОВИТ УДАР!  " if enemy_windup > 0.0 else "") + ("ЩИТ ИСТОЩЕН • " if guard_exhausted else "ЩИТ %d/100 • " % int(guard_stamina)) + ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
     update_health_labels()
