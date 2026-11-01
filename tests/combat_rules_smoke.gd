@@ -97,5 +97,16 @@ func _initialize() -> void:
         and Rules.level_damage(8, 0) == 8
         and Rules.level_damage(8, -1) == 6
     )
+    for viewport in [Vector2(360, 640), Vector2(480, 800), Vector2(1280, 720)]:
+        var rects := Rules.result_overlay_rects(viewport)
+        var panel: Rect2 = rects["panel"]
+        var change: Rect2 = rects["change"]
+        var restart: Rect2 = rects["restart"]
+        assert(panel.position.x >= 0.0 and panel.position.y >= 0.0)
+        assert(panel.end.x <= viewport.x and panel.end.y < viewport.y)
+        assert(change.position.x >= 0.0 and restart.end.x <= viewport.x)
+        assert(change.end.x < restart.position.x)
+        assert(change.position.y >= panel.end.y)
+        assert(restart.end.y <= viewport.y)
     print("Combat rules smoke tests passed")
     quit(0)
