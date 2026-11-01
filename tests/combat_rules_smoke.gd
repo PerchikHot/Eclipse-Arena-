@@ -21,6 +21,10 @@ func _initialize() -> void:
         and not Rules.eligible_defense_record(true, 2)
         and Rules.eligible_defense_record(true, 3)
         and Rules.eligible_defense_record(true, 10)
+        and Rules.guard_readiness_label(100.0, false) == "ЗАЩИТА: 100%"
+        and Rules.guard_readiness_label(12.0, false) == "ЗАЩИТА: МАЛО 12%"
+        and Rules.guard_readiness_label(40.0, true) == "ЗАЩИТА: ПЕРЕГРЕВ"
+        and Rules.guard_readiness_label(150.0, false) == "ЗАЩИТА: 100%"
         and Rules.next_defense_streak(0, true) == 1
         and Rules.next_defense_streak(3, true) == 4
         and Rules.next_defense_streak(4, false) == 0
