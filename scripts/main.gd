@@ -380,7 +380,7 @@ func _ready() -> void:
     result_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
     result_margin.add_child(result_scroll)
     result_label = Label.new()
-    result_label.custom_minimum_size = Vector2(650, 0)
+    result_label.custom_minimum_size = Vector2.ZERO
     result_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     result_label.add_theme_font_size_override("font_size", 19)
     result_label.add_theme_color_override("font_color", Color("#d7ebff"))
@@ -399,6 +399,10 @@ func _ready() -> void:
     change_fighter_button.visible = false
     change_fighter_button.pressed.connect(show_selection)
     add_child(change_fighter_button)
+    # Keep results and their actions inside the current viewport, including
+    # narrow Android windows and desktop resizes.
+    _layout_result_overlay()
+    get_viewport().size_changed.connect(_layout_result_overlay)
     skill_label = Label.new()
     skill_label.position = Vector2(650, 615)
     skill_label.size = Vector2(240, 30)
@@ -1131,6 +1135,21 @@ func start_game() -> void:
     change_fighter_button.visible = round_over
     result_panel.visible = round_over
     update_health_labels()
+
+func _layout_result_overlay() -> void:
+    if result_panel == null or result_label == null or restart_button == null or change_fighter_button == null:
+        return
+    var rects := CombatRules.result_overlay_rects(get_viewport_rect().size)
+    var panel_rect: Rect2 = rects["panel"]
+    var restart_rect: Rect2 = rects["restart"]
+    var change_rect: Rect2 = rects["change"]
+    result_panel.position = panel_rect.position
+    result_panel.size = panel_rect.size
+    result_label.custom_minimum_size = Vector2(maxf(0.0, panel_rect.size.x - 60.0), 0.0)
+    restart_button.position = restart_rect.position
+    restart_button.size = restart_rect.size
+    change_fighter_button.position = change_rect.position
+    change_fighter_button.size = change_rect.size
 
 # Warn before the opponent has enough energy for a special attack.
 # The text as well as the color changes, so the warning is accessible on mobile.
