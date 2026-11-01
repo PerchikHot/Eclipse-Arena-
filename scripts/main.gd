@@ -78,6 +78,7 @@ var selection_choice := 0
 var impact_flash := 0.0
 var joystick_center := Vector2(112, 643)
 var joystick_axis := Vector2.ZERO
+var jump_was_pressed := false
 var player_crouching := false
 var player_attack_level := 0
 var enemy_attack_level := 0
@@ -891,6 +892,7 @@ func toggle_pause() -> void:
         dash_queued = false
         joystick_touch = -1
         joystick_axis = Vector2.ZERO
+        jump_was_pressed = false
         for key in held.keys():
             held[key] = false
 
@@ -904,6 +906,7 @@ func toggle_controls_help() -> void:
         stop_active_sounds()
         joystick_touch = -1
         joystick_axis = Vector2.ZERO
+        jump_was_pressed = false
         for key in held.keys():
             held[key] = false
 
@@ -924,6 +927,7 @@ func show_menu() -> void:
     # the arena cannot trigger a stuck attack, block, or movement.
     joystick_touch = -1
     joystick_axis = Vector2.ZERO
+    jump_was_pressed = false
     dash_queued = false
     for key in held.keys():
         held[key] = false
@@ -1222,6 +1226,7 @@ func restart_round() -> void:
     # A new round must never inherit held attacks or a captured joystick touch.
     joystick_touch = -1
     joystick_axis = Vector2.ZERO
+    jump_was_pressed = false
     for key in held.keys():
         held[key] = false
     hp_left = 100
@@ -1412,6 +1417,7 @@ func _notification(what: int) -> void:
         stop_active_sounds()
         joystick_touch = -1
         joystick_axis = Vector2.ZERO
+        jump_was_pressed = false
         dash_queued = false
         guard_was_pressed = false
         parry_window = 0.0
@@ -1532,6 +1538,7 @@ func _input(event: InputEvent) -> void:
         elif not event.pressed and event.index == joystick_touch:
             joystick_touch = -1
             joystick_axis = Vector2.ZERO
+            jump_was_pressed = false
     elif event is InputEventScreenDrag and event.index == joystick_touch:
         joystick_axis = CombatRules.touch_direction(event.position, joystick_center)
 
@@ -1675,7 +1682,10 @@ func _process(delta: float) -> void:
             dash_invulnerable = 0.22
             play_sound("jump")
     x_left = clampf(x_left, 50, 1230)
-    if jump_pressed and not player_crouching and y_left >= 610:
+    var start_jump := CombatRules.should_start_jump(
+        jump_pressed, jump_was_pressed, y_left >= 610.0, player_crouching)
+    jump_was_pressed = jump_pressed
+    if start_jump:
         velocity_y = -740
         play_sound("jump")
     velocity_y += 1700 * delta
