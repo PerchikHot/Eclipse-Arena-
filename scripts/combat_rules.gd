@@ -190,11 +190,14 @@ static func level_damage(base_damage: int, level: int) -> int:
 # viewport. No result statistics or buttons may extend beyond the safe inset.
 # This is pure layout math, shared by Android and Windows.
 static func result_overlay_rects(viewport: Vector2) -> Dictionary:
-    var width := maxf(320.0, viewport.x)
-    var height := maxf(400.0, viewport.y)
-    var panel_width := minf(720.0, width - 32.0)
-    var top := clampf(height * 0.18, 70.0, 160.0)
-    var panel_height := minf(438.0, height - top - 100.0)
+    # Landscape phones can have less than 400 logical pixels in height.
+    # Never invent a larger viewport: that placed the action buttons below
+    # the bottom edge (e.g. 640x360 on Android).
+    var width := maxf(240.0, viewport.x)
+    var height := maxf(240.0, viewport.y)
+    var panel_width := minf(720.0, width - 24.0)
+    var top := clampf(height * 0.14, 18.0, 90.0)
+    var panel_height := maxf(64.0, minf(438.0, height - top - 92.0))
     var left := (width - panel_width) * 0.5
     var panel := Rect2(left, top, panel_width, panel_height)
     var button_width := minf(210.0, (panel_width - 12.0) * 0.5)
