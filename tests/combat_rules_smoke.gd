@@ -96,6 +96,11 @@ func _initialize() -> void:
         and Rules.level_damage(8, 1) == 11
         and Rules.level_damage(8, 0) == 8
         and Rules.level_damage(8, -1) == 6
+        and is_equal_approx(Rules.hitstun_seconds(1, false, false), 0.28)
+        and is_equal_approx(Rules.hitstun_seconds(0, false, false), 0.22)
+        and is_equal_approx(Rules.hitstun_seconds(-1, false, false), 0.18)
+        and is_equal_approx(Rules.hitstun_seconds(0, true, false), 0.55)
+        and Rules.hitstun_seconds(1, true, true) == 0.0
     )
     # A mobile HUD shows one urgent cue instead of overlapping long text.
     assert(Rules.compact_combat_cue(0.3, 1, 0, 0, 0.4, 0, 4) == "⚠ ВРАГ: ГОЛОВА")

@@ -178,6 +178,19 @@ static func attack_connects(level: int, target_crouched: bool, target_airborne: 
         return false
     return true
 
+# Successful unguarded hits briefly interrupt the AI's movement and windup.
+# A blocked hit never grants free stun; specials create a longer opening.
+static func hitstun_seconds(level: int, special: bool, blocked: bool) -> float:
+    if blocked:
+        return 0.0
+    if special:
+        return 0.55
+    if level > 0:
+        return 0.28
+    if level < 0:
+        return 0.18
+    return 0.22
+
 static func level_damage(base_damage: int, level: int) -> int:
     if level > 0:
         return maxi(1, base_damage + 3)

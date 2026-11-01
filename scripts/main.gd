@@ -11,6 +11,7 @@ var velocity_y := 0.0
 var attack_cooldown := 0.0
 var enemy_cooldown := 0.0
 var enemy_windup := 0.0
+var enemy_hitstun := 0.0
 var enemy_pending_special := false
 var left_rig := {}
 var right_rig := {}
@@ -1239,6 +1240,7 @@ func restart_round() -> void:
     attack_cooldown = 0.0
     enemy_cooldown = 0.0
     enemy_windup = 0.0
+    enemy_hitstun = 0.0
     enemy_pending_special = false
     combo_hits = 0
     best_combo = 0
@@ -1625,6 +1627,7 @@ func _process(delta: float) -> void:
     dash_cooldown = maxf(0.0, dash_cooldown - delta)
     dash_invulnerable = maxf(0.0, dash_invulnerable - delta)
     enemy_cooldown = maxf(0, enemy_cooldown - delta)
+    enemy_hitstun = maxf(0.0, enemy_hitstun - delta)
     var left_pressed: bool = Input.is_key_pressed(KEY_A) or joystick_axis.x < -0.2
     var right_pressed: bool = Input.is_key_pressed(KEY_D) or joystick_axis.x > 0.2
     var vertical_input := joystick_axis.y
@@ -1762,6 +1765,14 @@ func _process(delta: float) -> void:
                 training_guarded_hits += 1
             hp_right = maxi(0, hp_right - attack_damage)
             damage_dealt += hp_before_hit - hp_right
+            if not training_mode and not guarding_target:
+                enemy_hitstun = CombatRules.hitstun_seconds(
+                    player_attack_level, can_skill, false)
+                # Interrupt an attack being telegraphed. The enemy cannot
+                # deliver a hit while visibly recoiling from a clean strike.
+                enemy_windup = 0.0
+                enemy_pending_special = false
+                enemy_cooldown = maxf(enemy_cooldown, enemy_hitstun)
             enemy_hit_fx = 0.22
             enemy_energy = minf(100.0, enemy_energy + 5.0)
             impact_flash = 0.15
@@ -1778,14 +1789,18 @@ func _process(delta: float) -> void:
                     return
     if not training_mode and hp_left > 0 and hp_right > 0:
         var distance: float = absf(x_left - x_right)
-        if ai_timer <= 0.0:
+        if ai_timer <= 0.0 and enemy_hitstun <= 0.0:
             ai_timer = [1.8, 1.1, 0.6][ai_difficulty]
             ai_retreat = distance < 185.0 and randf() < [0.18, 0.35, 0.50][ai_difficulty]
             # Experienced rivals defend at different heights. The guard is
             # sampled per decision, never randomly per frame.
             enemy_guarding = distance < 190.0 and randf() < [0.10, 0.32, 0.52][ai_difficulty]
             enemy_crouching = enemy_guarding and randf() < 0.48
-        if enemy_windup > 0.0:
+        if enemy_hitstun > 0.0:
+            enemy_guarding = false
+            enemy_crouching = false
+            enemy_motion = 0.0
+        elif enemy_windup > 0.0:
             enemy_guarding = false
             enemy_crouching = false
             enemy_motion = 0.0
@@ -1803,7 +1818,9 @@ func _process(delta: float) -> void:
             x_right = clampf(midpoint + separation * 42.0, 50.0, 1230.0)
         # Telegraph each attack so the player has time to dodge or block.
         # Resolve damage only after the windup, not at the first AI decision.
-        if enemy_windup > 0.0:
+        if enemy_hitstun > 0.0:
+            enemy_windup = 0.0
+        elif enemy_windup > 0.0:
             enemy_windup = maxf(0.0, enemy_windup - delta)
             if enemy_windup <= 0.0:
                 enemy_attack_fx = 0.3 if enemy_pending_special else 0.18
