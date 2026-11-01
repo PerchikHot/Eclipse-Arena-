@@ -73,5 +73,29 @@ func _initialize() -> void:
         and Rules.round_training_tip(4, 5, 20, 5, 0).contains("парирование")
         and Rules.round_training_tip(4, 5, 20, 5, 2).begins_with("ОТЛИЧНО:")
     )
+    assert(
+        Rules.touch_direction(Vector2(112, 643), Vector2(112, 643)) == Vector2.ZERO
+        and Rules.touch_direction(Vector2(112, 585), Vector2(112, 643)) == Vector2.UP
+        and Rules.touch_direction(Vector2(112, 701), Vector2(112, 643)) == Vector2.DOWN
+        and Rules.touch_direction(Vector2(170, 643), Vector2(112, 643)) == Vector2.RIGHT
+        and Rules.touch_direction(Vector2(200, 643), Vector2(112, 643)).length() <= 1.0
+        and Rules.attack_level(-1.0) == 1
+        and Rules.attack_level(0.0) == 0
+        and Rules.attack_level(1.0) == -1
+        and Rules.attack_level_label(1) == "ГОЛОВА"
+        and Rules.attack_level_label(0) == "КОРПУС"
+        and Rules.attack_level_label(-1) == "НОГИ"
+        and Rules.guard_covers_level(false, 1)
+        and not Rules.guard_covers_level(false, -1)
+        and Rules.guard_covers_level(true, -1)
+        and not Rules.guard_covers_level(true, 1)
+        and Rules.guard_covers_level(true, 0)
+        and not Rules.attack_connects(1, true, false)
+        and not Rules.attack_connects(-1, false, true)
+        and Rules.attack_connects(0, true, false)
+        and Rules.level_damage(8, 1) == 11
+        and Rules.level_damage(8, 0) == 8
+        and Rules.level_damage(8, -1) == 6
+    )
     print("Combat rules smoke tests passed")
     quit(0)
