@@ -617,7 +617,36 @@ func _ready() -> void:
         show_menu()
     )
     selection_layer.add_child(back_button)
+    _style_veyrion_buttons()
     show_menu()
+
+# A shared theme for real menu, selection and training controls on both
+# Android and Windows. Circular combat controls retain their distinct HUD.
+func _style_veyrion_buttons() -> void:
+    for node in find_children("*", "Button", true, false):
+        var button := node as Button
+        if button in controls.values():
+            continue
+        var normal := StyleBoxFlat.new()
+        normal.bg_color = Color("#1b3157")
+        normal.border_color = Color("#568bc9")
+        normal.set_border_width_all(2)
+        normal.set_corner_radius_all(14)
+        normal.shadow_color = Color(0.0, 0.0, 0.0, 0.3)
+        normal.shadow_size = 4
+        var hover := normal.duplicate() as StyleBoxFlat
+        hover.bg_color = Color("#30568b")
+        var pressed := normal.duplicate() as StyleBoxFlat
+        pressed.bg_color = Color("#4371aa")
+        var disabled := normal.duplicate() as StyleBoxFlat
+        disabled.bg_color = Color("#182339")
+        button.add_theme_stylebox_override("normal", normal)
+        button.add_theme_stylebox_override("hover", hover)
+        button.add_theme_stylebox_override("pressed", pressed)
+        button.add_theme_stylebox_override("disabled", disabled)
+        if button not in selection_buttons:
+            button.add_theme_color_override("font_color", Color("#ecf5ff"))
+        button.add_theme_color_override("font_hover_color", Color("#ffffff"))
 
 func show_selection() -> void:
     personal_record_label.text = "КОМБО: x%d\nПОБЕДЫ В КАРЬЕРЕ: %d%%" % [
