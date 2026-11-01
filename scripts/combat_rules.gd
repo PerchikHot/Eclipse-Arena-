@@ -189,6 +189,14 @@ static func level_damage(base_damage: int, level: int) -> int:
 # Fit the scrollable results panel and both actions inside a small mobile
 # viewport. No result statistics or buttons may extend beyond the safe inset.
 # This is pure layout math, shared by Android and Windows.
+# Small landscape Android viewports must not use desktop-sized result text.
+static func result_font_size(viewport: Vector2) -> int:
+    if viewport.y < 390.0 or viewport.x < 420.0:
+        return 14
+    if viewport.x < 650.0:
+        return 16
+    return 19
+
 static func result_overlay_rects(viewport: Vector2) -> Dictionary:
     # Landscape phones can have less than 400 logical pixels in height.
     # Never invent a larger viewport: that placed the action buttons below
