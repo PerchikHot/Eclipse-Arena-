@@ -100,6 +100,8 @@ func _initialize() -> void:
     assert(Rules.fighter_sprite_size(false) == Vector2(232, 360))
     assert(Rules.fighter_sprite_size(true) == Vector2(232, 212))
     assert(Rules.fighter_sprite_size(false).y > Rules.fighter_sprite_size(true).y)
+    assert(Rules.result_font_size(Vector2(120, 90)) == 11)
+    assert(Rules.result_font_size(Vector2(160, 120)) == 11)
     assert(Rules.result_font_size(Vector2(320, 240)) == 14)
     assert(Rules.result_font_size(Vector2(640, 360)) == 14)
     assert(Rules.result_font_size(Vector2(480, 800)) == 16)
@@ -107,6 +109,10 @@ func _initialize() -> void:
     for viewport in [Vector2(120, 90), Vector2(160, 120), Vector2(200, 180), Vector2(240, 180), Vector2(300, 200), Vector2(320, 240), Vector2(640, 360), Vector2(800, 360), Vector2(360, 640), Vector2(480, 800), Vector2(1280, 720)]:
         var rects := Rules.result_overlay_rects(viewport)
         var panel: Rect2 = rects["panel"]
+        var insets := Rules.result_content_insets(panel.size)
+        assert(insets.x >= 2 and insets.y >= 2)
+        assert(insets.x * 2 + 12 < panel.size.x)
+        assert(insets.y * 2 < panel.size.y)
         var change: Rect2 = rects["change"]
         var restart: Rect2 = rects["restart"]
         assert(panel.position.x >= 0.0 and panel.position.y >= 0.0)
