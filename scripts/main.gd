@@ -1148,6 +1148,8 @@ func _layout_result_overlay() -> void:
     result_panel.position = panel_rect.position
     result_panel.size = panel_rect.size
     result_label.custom_minimum_size = Vector2(maxf(0.0, panel_rect.size.x - 60.0), 0.0)
+    result_label.add_theme_font_size_override("font_size",
+        CombatRules.result_font_size(get_viewport_rect().size))
     restart_button.position = restart_rect.position
     restart_button.size = restart_rect.size
     change_fighter_button.position = change_rect.position
@@ -1286,6 +1288,10 @@ func restart_round() -> void:
         dash_button.visible = true
         cooldown_label.visible = true
         accuracy_label.visible = true
+        skill_label.visible = true
+        enemy_energy_label.visible = true
+        guard_status_label.visible = true
+        hp_advantage_label.visible = true
     restart_button.visible = false
     change_fighter_button.visible = false
     queue_redraw()
@@ -1367,6 +1373,12 @@ func finish_round(outcome: int) -> void:
     dash_button.visible = false
     cooldown_label.visible = false
     accuracy_label.visible = false
+    # Remove nonessential HUD text behind the scrollable result card.
+    # Exact HP and damage remain available inside the result statistics.
+    skill_label.visible = false
+    enemy_energy_label.visible = false
+    guard_status_label.visible = false
+    hp_advantage_label.visible = false
     restart_button.visible = true
     change_fighter_button.visible = true
 
