@@ -97,7 +97,13 @@ func _initialize() -> void:
         and Rules.level_damage(8, 0) == 8
         and Rules.level_damage(8, -1) == 6
     )
-    assert(Rules.fighter_sprite_size(false) == Vector2(232, 360))
+    # A mobile HUD shows one urgent cue instead of overlapping long text.
+    assert(Rules.compact_combat_cue(0.3, 1, 0, 0, 0.4, 0, 4) == "⚠ ВРАГ: ГОЛОВА")
+    assert(Rules.compact_combat_cue(0, 0, 1, 0, 0, 0, 0) == "⚡ БЛОК ПРОБИТ")
+    assert(Rules.compact_combat_cue(0, 0, 0, 0.1, 0, 0, 0) == "✦ ПАРИРОВАНИЕ")
+    assert(Rules.compact_combat_cue(0, 0, 0, 0, 0, 0, 3) == "КОМБО 3")
+    assert(Rules.compact_combat_cue(0, 0, 0, 0, 0, 0, 0) == "ГОТОВО К БОЮ")
+        assert(Rules.fighter_sprite_size(false) == Vector2(232, 360))
     assert(Rules.fighter_sprite_size(true) == Vector2(232, 212))
     assert(Rules.fighter_sprite_size(false).y > Rules.fighter_sprite_size(true).y)
     assert(Rules.result_font_size(Vector2(120, 90)) == 11)
