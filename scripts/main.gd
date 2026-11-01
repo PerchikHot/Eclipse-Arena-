@@ -151,6 +151,7 @@ var training_challenge_result := ""
 var timer_warning_active := false
 var final_countdown_active := false
 var has_game_focus := true
+var hp_advantage_label: Label
 var round_timer_label: Label
 var round_number_label: Label
 var fps_label: Label
@@ -337,6 +338,14 @@ func _ready() -> void:
     score_label.add_theme_font_size_override("font_size", 16)
     score_label.text = "ИГРОК 0 : 0 ПРОТИВНИК"
     add_child(score_label)
+    hp_advantage_label = Label.new()
+    hp_advantage_label.position = Vector2(490, 126)
+    hp_advantage_label.size = Vector2(300, 28)
+    hp_advantage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    hp_advantage_label.add_theme_font_size_override("font_size", 14)
+    hp_advantage_label.add_theme_color_override("font_color", Color("#80d9ff"))
+    hp_advantage_label.text = CombatRules.health_advantage_label(100, 100)
+    add_child(hp_advantage_label)
     # Optional desktop performance diagnostic; disabled by default.
     fps_label = Label.new()
     fps_label.position = Vector2(1110, 94)
@@ -1107,6 +1116,9 @@ func update_enemy_energy_label() -> void:
 
 # Keep the exact HP visible alongside the colored bars on both platforms.
 func update_health_labels() -> void:
+    hp_advantage_label.text = CombatRules.health_advantage_label(hp_left, hp_right)
+    hp_advantage_label.add_theme_color_override("font_color",
+        Color("#ff737e") if hp_left < hp_right else Color("#80d9ff"))
     player_name_label.text = "%s  •  %d HP" % [fighter_names[selected_fighter], hp_left]
     enemy_name_label.text = "%s  •  %d HP" % [fighter_names[enemy_fighter], hp_right]
     # Low-health warnings are visible without relying on the HP bar alone.
