@@ -36,6 +36,11 @@ func _initialize() -> void:
         and Rules.training_damage_preview(0, false) == Vector2i(8, 18)
         and Rules.training_damage_preview(4, false) == Vector2i(12, 18)
         and Rules.training_damage_preview(4, true) == Vector2i(3, 18)
+        and Rules.next_career_record(Vector3i.ZERO, 1) == Vector3i(1, 0, 0)
+        and Rules.next_career_record(Vector3i(2, 1, 0), -1) == Vector3i(2, 2, 0)
+        and Rules.next_career_record(Vector3i(2, 1, 0), 0) == Vector3i(2, 1, 1)
+        and Rules.next_career_record(Vector3i(-2, 0, 0), 1) == Vector3i(1, 0, 0)
+        and Rules.next_career_record(Vector3i(99999, 0, 0), 1) == Vector3i(99999, 0, 0)
     )
     if not passed:
         push_error("Defense drill scoring regression")
