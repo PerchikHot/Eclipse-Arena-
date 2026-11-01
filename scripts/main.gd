@@ -23,6 +23,8 @@ var draws := 0
 var score_label: Label
 var result_label: Label
 var result_panel: PanelContainer
+var result_margin: MarginContainer
+var result_scroll: ScrollContainer
 var restart_button: Button
 var change_fighter_button: Button
 var player_attack_fx := 0.0
@@ -371,13 +373,13 @@ func _ready() -> void:
     result_style.set_corner_radius_all(20)
     result_panel.add_theme_stylebox_override("panel", result_style)
     add_child(result_panel)
-    var result_margin := MarginContainer.new()
+    result_margin = MarginContainer.new()
     result_margin.add_theme_constant_override("margin_left", 24)
     result_margin.add_theme_constant_override("margin_right", 24)
     result_margin.add_theme_constant_override("margin_top", 18)
     result_margin.add_theme_constant_override("margin_bottom", 18)
     result_panel.add_child(result_margin)
-    var result_scroll := ScrollContainer.new()
+    result_scroll = ScrollContainer.new()
     result_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
     result_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
     result_margin.add_child(result_scroll)
@@ -1147,7 +1149,13 @@ func _layout_result_overlay() -> void:
     var change_rect: Rect2 = rects["change"]
     result_panel.position = panel_rect.position
     result_panel.size = panel_rect.size
-    result_label.custom_minimum_size = Vector2(maxf(0.0, panel_rect.size.x - 60.0), 0.0)
+    var insets := CombatRules.result_content_insets(panel_rect.size)
+    result_margin.add_theme_constant_override("margin_left", insets.x)
+    result_margin.add_theme_constant_override("margin_right", insets.x)
+    result_margin.add_theme_constant_override("margin_top", insets.y)
+    result_margin.add_theme_constant_override("margin_bottom", insets.y)
+    result_label.custom_minimum_size = Vector2(
+        maxf(0.0, panel_rect.size.x - float(insets.x * 2) - 12.0), 0.0)
     result_label.add_theme_font_size_override("font_size",
         CombatRules.result_font_size(get_viewport_rect().size))
     restart_button.position = restart_rect.position
@@ -1367,6 +1375,9 @@ func finish_round(outcome: int) -> void:
         restart_button.text = "НОВЫЙ МАТЧ" if OS.has_feature("mobile") else "НОВЫЙ МАТЧ (R)"
     else:
         restart_button.text = "СЛЕД. РАУНД" if OS.has_feature("mobile") else "СЛЕД. РАУНД (R)"
+    # Each new result starts at its headline, not at the scroll offset
+    # left behind by the previous match.
+    result_scroll.scroll_vertical = 0
     result_panel.visible = true
     for key in controls.keys():
         controls[key].visible = false
