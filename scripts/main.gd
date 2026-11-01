@@ -620,7 +620,8 @@ func _ready() -> void:
     show_menu()
 
 func show_selection() -> void:
-    personal_record_label.text = "ЛИЧНЫЙ РЕКОРД КОМБО: x%d" % personal_best_combo
+    personal_record_label.text = "КОМБО: x%d\nПОБЕДЫ В КАРЬЕРЕ: %d%%" % [
+        personal_best_combo, CombatRules.career_win_rate(career_record)]
     play_sound("menu")
     in_menu = true
     menu_layer.visible = false
@@ -1225,8 +1226,9 @@ func finish_round(outcome: int) -> void:
     # Ranked career stats persist between sessions, but training never
     # enters finish_round. Save once at the end, not after each hit.
     career_record = CombatRules.next_career_record(career_record, outcome)
-    result_label.text += "\nКАРЬЕРА: %d побед / %d поражений / %d ничьих" % [
-        career_record.x, career_record.y, career_record.z]
+    result_label.text += "\nКАРЬЕРА: %d побед / %d поражений / %d ничьих • %d%% побед" % [
+        career_record.x, career_record.y, career_record.z,
+        CombatRules.career_win_rate(career_record)]
     var record_settings := ConfigFile.new()
     record_settings.load("user://settings.cfg")
     record_settings.set_value("records", "best_combo", personal_best_combo)

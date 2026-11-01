@@ -70,3 +70,15 @@ static func next_career_record(record: Vector3i, outcome: int) -> Vector3i:
     else:
         safe.z = mini(99999, safe.z + 1)
     return safe
+
+
+# Career win percentage is computed from saved ranked results only.
+# Training matches never enter the career record and ties count as rounds.
+static func career_win_rate(record: Vector3i) -> int:
+    var wins := clampi(record.x, 0, 99999)
+    var losses := clampi(record.y, 0, 99999)
+    var draws := clampi(record.z, 0, 99999)
+    var total := wins + losses + draws
+    if total == 0:
+        return 0
+    return clampi(roundi(100.0 * float(wins) / float(total)), 0, 100)
