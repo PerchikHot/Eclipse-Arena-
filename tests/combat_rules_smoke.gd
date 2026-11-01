@@ -97,6 +97,9 @@ func _initialize() -> void:
         and Rules.level_damage(8, 0) == 8
         and Rules.level_damage(8, -1) == 6
     )
+    assert(Rules.fighter_sprite_size(false) == Vector2(232, 360))
+    assert(Rules.fighter_sprite_size(true) == Vector2(232, 212))
+    assert(Rules.fighter_sprite_size(false).y > Rules.fighter_sprite_size(true).y)
     assert(Rules.result_font_size(Vector2(320, 240)) == 14)
     assert(Rules.result_font_size(Vector2(640, 360)) == 14)
     assert(Rules.result_font_size(Vector2(480, 800)) == 16)
