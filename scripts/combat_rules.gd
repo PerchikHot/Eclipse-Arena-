@@ -196,7 +196,17 @@ static func fighter_sprite_size(crouched: bool) -> Vector2:
 # viewport. No result statistics or buttons may extend beyond the safe inset.
 # This is pure layout math, shared by Android and Windows.
 # Small landscape Android viewports must not use desktop-sized result text.
+# Tiny split-screen panels must not inherit desktop margins that leave
+# almost no scrollable text area. Insets are in panel-local logical pixels.
+static func result_content_insets(panel_size: Vector2) -> Vector2i:
+    return Vector2i(
+        clampi(roundi(panel_size.x * 0.04), 2, 24),
+        clampi(roundi(panel_size.y * 0.06), 2, 18)
+    )
+
 static func result_font_size(viewport: Vector2) -> int:
+    if viewport.x < 200.0 or viewport.y < 140.0:
+        return 11
     if viewport.y < 390.0 or viewport.x < 420.0:
         return 14
     if viewport.x < 650.0:
