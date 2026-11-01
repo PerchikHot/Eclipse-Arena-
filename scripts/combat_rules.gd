@@ -170,6 +170,12 @@ static func attack_level_label(level: int) -> String:
 static func guard_covers_level(crouched: bool, level: int) -> bool:
     return level <= 0 if crouched else level >= 0
 
+# Holding up selects a head strike as well as jump. Jump only on the
+# rising edge; holding up through landing must not cause repeated hops.
+static func should_start_jump(pressed: bool, was_pressed: bool,
+        grounded: bool, crouched: bool) -> bool:
+    return pressed and not was_pressed and grounded and not crouched
+
 # High strikes pass over crouching fighters; low strikes pass below jumps.
 static func attack_connects(level: int, target_crouched: bool, target_airborne: bool) -> bool:
     if level > 0 and target_crouched:
