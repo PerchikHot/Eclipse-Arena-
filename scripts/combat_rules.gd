@@ -109,3 +109,17 @@ static func round_performance_grade(outcome: int, landed: int, attempted: int,
     if score >= 30:
         return "C"
     return "D"
+
+# Actionable post-match coaching; the text never changes ranking or saves.
+static func round_training_tip(landed: int, attempted: int, dealt: int,
+        taken: int, parries: int) -> String:
+    if attempted <= 0:
+        return "СОВЕТ: используй обычные атаки, чтобы начать комбо."
+    var accuracy := float(clampi(landed, 0, attempted)) / float(attempted)
+    if accuracy < 0.5:
+        return "СОВЕТ: сократи дистанцию и атакуй после открытия защиты."
+    if taken > dealt:
+        return "СОВЕТ: чаще уклоняйся и блокируй ответные удары."
+    if parries <= 0:
+        return "СОВЕТ: попробуй парирование перед контратакой."
+    return "ОТЛИЧНО: сочетай парирование, комбо и спецприёмы."
