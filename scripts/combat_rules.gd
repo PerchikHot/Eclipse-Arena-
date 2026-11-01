@@ -144,3 +144,43 @@ static func health_advantage_label(player_hp: int, enemy_hp: int) -> String:
     if difference > 0:
         return "HP: ПРЕИМУЩЕСТВО +%d" % difference
     return "HP: ОТСТАВАНИЕ %d" % -difference
+
+# Touch and keyboard share these directional combat rules. Screen Y increases
+# downwards: up selects a head strike, down selects a low strike.
+static func touch_direction(position: Vector2, center: Vector2) -> Vector2:
+    var offset := (position - center) / 58.0
+    return offset.limit_length(1.0) if offset.length() >= 0.2 else Vector2.ZERO
+
+static func attack_level(vertical_axis: float) -> int:
+    if vertical_axis < -0.45:
+        return 1 # head
+    if vertical_axis > 0.45:
+        return -1 # legs
+    return 0 # torso
+
+static func attack_level_label(level: int) -> String:
+    if level > 0:
+        return "ГОЛОВА"
+    if level < 0:
+        return "НОГИ"
+    return "КОРПУС"
+
+# Standing guard covers the head, crouching guard covers the legs. Both
+# cover the torso; attacks against the wrong guard height are unblocked.
+static func guard_covers_level(crouched: bool, level: int) -> bool:
+    return level <= 0 if crouched else level >= 0
+
+# High strikes pass over crouching fighters; low strikes pass below jumps.
+static func attack_connects(level: int, target_crouched: bool, target_airborne: bool) -> bool:
+    if level > 0 and target_crouched:
+        return false
+    if level < 0 and target_airborne:
+        return false
+    return true
+
+static func level_damage(base_damage: int, level: int) -> int:
+    if level > 0:
+        return maxi(1, base_damage + 3)
+    if level < 0:
+        return maxi(1, base_damage - 2)
+    return maxi(1, base_damage)
