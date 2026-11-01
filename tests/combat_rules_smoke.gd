@@ -103,7 +103,7 @@ func _initialize() -> void:
     assert(Rules.compact_combat_cue(0, 0, 0, 0.1, 0, 0, 0) == "✦ ПАРИРОВАНИЕ")
     assert(Rules.compact_combat_cue(0, 0, 0, 0, 0, 0, 3) == "КОМБО 3")
     assert(Rules.compact_combat_cue(0, 0, 0, 0, 0, 0, 0) == "ГОТОВО К БОЮ")
-        assert(Rules.fighter_sprite_size(false) == Vector2(232, 360))
+    assert(Rules.fighter_sprite_size(false) == Vector2(232, 360))
     assert(Rules.fighter_sprite_size(true) == Vector2(232, 212))
     assert(Rules.fighter_sprite_size(false).y > Rules.fighter_sprite_size(true).y)
     assert(Rules.result_font_size(Vector2(120, 90)) == 11)
