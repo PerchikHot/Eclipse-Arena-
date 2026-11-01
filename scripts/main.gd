@@ -72,7 +72,10 @@ var selection_name: Label
 var selection_choice := 0
 var impact_flash := 0.0
 var joystick_center := Vector2(112, 643)
-var joystick_axis := 0.0
+var joystick_axis := Vector2.ZERO
+var player_crouching := false
+var player_attack_level := 0
+var enemy_attack_level := 0
 var joystick_touch := -1
 var combo_hits := 0
 var best_combo := 0
@@ -462,7 +465,7 @@ func _ready() -> void:
     add_child(pause_overlay)
     # Desktop-only help can be opened during a match or while paused.
     controls_help_label = Label.new()
-    controls_help_label.text = "УПРАВЛЕНИЕ (кнопка — скрыть)\nБой на паузе, пока открыта помощь\nДжойстик слева — движение\nПРЫЖОК / УДАР / БЛОК / СПЕЦ — справа\nРЫВОК — уклонение (30 щита)  •  ПАУЗА — остановить бой  •  МЕНЮ — выйти\nВ тренировке: ЩИТ — защита мишени, СБРОС — заново\nПосле раунда: ЗАНОВО или СМЕНИТЬ БОЙЦА" if OS.has_feature("mobile") else "УПРАВЛЕНИЕ (F1 — скрыть)\nБой на паузе, пока открыта помощь\nA/D — движение  •  W/ПРОБЕЛ — прыжок\nJ — удар  •  K — блок  •  L — спец\nSHIFT — рывок  •  P — пауза  •  M — звук  •  F3 — FPS  •  ESC — помощь\nТренировка: T — скорость мишени  •  G — щит  •  R — сброс\nПосле раунда: R — заново  •  Q — боец"
+    controls_help_label.text = "УПРАВЛЕНИЕ (кнопка — скрыть)\nБой на паузе, пока открыта помощь\nДжойстик: ← → ходьба, ↑ прыжок, ↓ приседание\nУДАР + ↑ голова, УДАР + ↓ ноги, УДАР корпус\nБЛОК стоя — верх, БЛОК сидя — низ\nПРЫЖОК / УДАР / БЛОК / СПЕЦ — справа\nРЫВОК — уклонение (30 щита)  •  ПАУЗА — остановить бой  •  МЕНЮ — выйти\nВ тренировке: ЩИТ — защита мишени, СБРОС — заново\nПосле раунда: ЗАНОВО или СМЕНИТЬ БОЙЦА" if OS.has_feature("mobile") else "УПРАВЛЕНИЕ (F1 — скрыть)\nБой на паузе, пока открыта помощь\nA/D — ходьба  •  W/ПРОБЕЛ — прыжок  •  S — приседание\nW+J — голова  •  J — корпус  •  S+J — ноги\nK — блок (S+K — нижний)  •  L — спец\nSHIFT — рывок  •  P — пауза  •  M — звук  •  F3 — FPS  •  ESC — помощь\nТренировка: T — скорость мишени  •  G — щит  •  R — сброс\nПосле раунда: R — заново  •  Q — боец"
     controls_help_label.position = Vector2(355, 185)
     controls_help_label.size = Vector2(580, 240)
     controls_help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -878,7 +881,7 @@ func toggle_pause() -> void:
         stop_active_sounds()
         dash_queued = false
         joystick_touch = -1
-        joystick_axis = 0.0
+        joystick_axis = Vector2.ZERO
         for key in held.keys():
             held[key] = false
 
@@ -891,7 +894,7 @@ func toggle_controls_help() -> void:
     if controls_help_label.visible:
         stop_active_sounds()
         joystick_touch = -1
-        joystick_axis = 0.0
+        joystick_axis = Vector2.ZERO
         for key in held.keys():
             held[key] = false
 
@@ -911,7 +914,7 @@ func show_menu() -> void:
     # Release touch and button states when leaving combat so returning to
     # the arena cannot trigger a stuck attack, block, or movement.
     joystick_touch = -1
-    joystick_axis = 0.0
+    joystick_axis = Vector2.ZERO
     dash_queued = false
     for key in held.keys():
         held[key] = false
@@ -1186,7 +1189,7 @@ func restart_round() -> void:
     pause_toggle_button.text = "ПАУЗА" if OS.has_feature("mobile") else "ПАУЗА (P)"
     # A new round must never inherit held attacks or a captured joystick touch.
     joystick_touch = -1
-    joystick_axis = 0.0
+    joystick_axis = Vector2.ZERO
     for key in held.keys():
         held[key] = false
     hp_left = 100
@@ -1199,6 +1202,9 @@ func restart_round() -> void:
     training_attack_windup = 0.0
     y_left = 610.0
     velocity_y = 0.0
+    player_crouching = false
+    player_attack_level = 0
+    enemy_attack_level = 0
     attack_cooldown = 0.0
     enemy_cooldown = 0.0
     enemy_windup = 0.0
@@ -1357,7 +1363,7 @@ func _notification(what: int) -> void:
         has_game_focus = false
         stop_active_sounds()
         joystick_touch = -1
-        joystick_axis = 0.0
+        joystick_axis = Vector2.ZERO
         dash_queued = false
         guard_was_pressed = false
         parry_window = 0.0
@@ -1474,12 +1480,12 @@ func _input(event: InputEvent) -> void:
     if event is InputEventScreenTouch:
         if event.pressed and event.position.distance_to(joystick_center) < 105.0 and joystick_touch == -1:
             joystick_touch = event.index
-            joystick_axis = clampf((event.position.x - joystick_center.x) / 58.0, -1.0, 1.0)
+            joystick_axis = CombatRules.touch_direction(event.position, joystick_center)
         elif not event.pressed and event.index == joystick_touch:
             joystick_touch = -1
-            joystick_axis = 0.0
+            joystick_axis = Vector2.ZERO
     elif event is InputEventScreenDrag and event.index == joystick_touch:
-        joystick_axis = clampf((event.position.x - joystick_center.x) / 58.0, -1.0, 1.0)
+        joystick_axis = CombatRules.touch_direction(event.position, joystick_center)
 
 func _process(delta: float) -> void:
     if fps_label.visible:
@@ -1573,11 +1579,19 @@ func _process(delta: float) -> void:
     dash_cooldown = maxf(0.0, dash_cooldown - delta)
     dash_invulnerable = maxf(0.0, dash_invulnerable - delta)
     enemy_cooldown = maxf(0, enemy_cooldown - delta)
-    var left_pressed: bool = Input.is_key_pressed(KEY_A) or joystick_axis < -0.2
-    var right_pressed: bool = Input.is_key_pressed(KEY_D) or joystick_axis > 0.2
-    var jump_pressed: bool = Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_W) or held["JUMP"]
+    var left_pressed: bool = Input.is_key_pressed(KEY_A) or joystick_axis.x < -0.2
+    var right_pressed: bool = Input.is_key_pressed(KEY_D) or joystick_axis.x > 0.2
+    var vertical_input := joystick_axis.y
+    if Input.is_key_pressed(KEY_W):
+        vertical_input = -1.0
+    elif Input.is_key_pressed(KEY_S):
+        vertical_input = 1.0
+    var jump_pressed: bool = Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_W) or joystick_axis.y < -0.55 or held["JUMP"]
     var hit_pressed: bool = Input.is_key_pressed(KEY_J) or held["HIT"]
-    player_motion = joystick_axis if absf(joystick_axis) > 0.2 else float(right_pressed) - float(left_pressed)
+    player_crouching = vertical_input > 0.55 and y_left >= 610.0
+    player_motion = joystick_axis.x if absf(joystick_axis.x) > 0.2 else float(right_pressed) - float(left_pressed)
+    if player_crouching:
+        player_motion *= 0.45
     var guard_requested: bool = held["BLOCK"] or Input.is_key_pressed(KEY_K)
     if guard_requested and not guard_was_pressed and not guard_exhausted and parry_cooldown <= 0.0:
         parry_window = 0.20
@@ -1612,7 +1626,7 @@ func _process(delta: float) -> void:
             dash_invulnerable = 0.22
             play_sound("jump")
     x_left = clampf(x_left, 50, 1230)
-    if jump_pressed and y_left >= 610:
+    if jump_pressed and not player_crouching and y_left >= 610:
         velocity_y = -740
         play_sound("jump")
     velocity_y += 1700 * delta
@@ -1674,6 +1688,7 @@ func _process(delta: float) -> void:
     var skill_pressed: bool = held["SKILL"] or Input.is_key_pressed(KEY_L)
     var can_skill: bool = skill_pressed and skill_energy >= skill_cost
     if (hit_pressed or can_skill) and attack_cooldown <= 0 and block_timer <= 0.0:
+        player_attack_level = 0 if can_skill else CombatRules.attack_level(vertical_input)
         if can_skill:
             skill_energy -= skill_cost
         attack_cooldown = 0.8 if can_skill else 0.43
@@ -1681,7 +1696,8 @@ func _process(delta: float) -> void:
         update_accuracy_label()
         player_attack_fx = 0.18
         play_sound("swing")
-        if absf(x_left - x_right) < (195.0 if can_skill else 155.0) and absf(y_left - 610.0) < 115.0:
+        var attack_height_range := 265.0 if player_attack_level > 0 else 115.0
+        if absf(x_left - x_right) < (195.0 if can_skill else 155.0) and absf(y_left - 610.0) < attack_height_range:
             combo_hits += 1
             hits_landed += 1
             best_combo = maxi(best_combo, combo_hits)
@@ -1693,8 +1709,9 @@ func _process(delta: float) -> void:
             var hp_before_hit := hp_right
             # Same tested damage rule for touch and keyboard combat.
             var guarding_target := training_mode and training_target_guarding
-            var attack_damage := CombatRules.player_attack_damage(
-                combo_hits, can_skill, guarding_target)
+            var attack_damage := CombatRules.level_damage(
+                CombatRules.player_attack_damage(combo_hits, can_skill, guarding_target),
+                player_attack_level)
             if guarding_target and not can_skill:
                 training_guarded_hits += 1
             hp_right = maxi(0, hp_right - attack_damage)
@@ -1739,8 +1756,8 @@ func _process(delta: float) -> void:
             if enemy_windup <= 0.0:
                 enemy_attack_fx = 0.3 if enemy_pending_special else 0.18
                 play_sound("swing")
-                if dash_invulnerable <= 0.0 and absf(x_left - x_right) < 145.0 and absf(y_left - 610.0) < 120.0:
-                    if block_timer > 0.0 and parry_window > 0.0:
+                if dash_invulnerable <= 0.0 and absf(x_left - x_right) < 145.0 and absf(y_left - 610.0) < 120.0 and CombatRules.attack_connects(enemy_attack_level, player_crouching, y_left < 580.0):
+                    if block_timer > 0.0 and parry_window > 0.0 and CombatRules.guard_covers_level(player_crouching, enemy_attack_level):
                         # A well-timed fresh block cancels the telegraphed hit.
                         # The cooldown prevents rapidly tapping block for free.
                         parry_window = 0.0
@@ -1755,7 +1772,7 @@ func _process(delta: float) -> void:
                         impact_flash = 0.15
                         play_sound("hit")
                         var hp_before_enemy_hit := hp_left
-                        var was_blocking := block_timer > 0.0
+                        var was_blocking := block_timer > 0.0 and CombatRules.guard_covers_level(player_crouching, enemy_attack_level)
                         var guard_broken := false
                         if was_blocking:
                             blocked_hits += 1
@@ -1768,7 +1785,8 @@ func _process(delta: float) -> void:
                                 guard_breaks += 1
                                 guard_break_flash = 1.25
                                 block_timer = 0.0
-                        var enemy_damage := 15 if enemy_pending_special else 7
+                        var enemy_damage := CombatRules.level_damage(
+                            15 if enemy_pending_special else 7, enemy_attack_level)
                         if was_blocking:
                             enemy_damage = (10 if enemy_pending_special else 5) if guard_broken else (4 if enemy_pending_special else 2)
                         hp_left = maxi(0, hp_left - enemy_damage)
@@ -1785,6 +1803,7 @@ func _process(delta: float) -> void:
                 enemy_pending_special = false
         elif absf(x_left - x_right) < 140.0 and absf(y_left - 610.0) < 120.0 and enemy_cooldown <= 0.0:
             enemy_pending_special = enemy_energy >= skill_cost and randf() < 0.55
+            enemy_attack_level = 0 if enemy_pending_special else randi_range(-1, 1)
             if enemy_pending_special:
                 enemy_energy -= skill_cost
             # Novice is easier to read, master reacts faster.
@@ -1796,7 +1815,7 @@ func _process(delta: float) -> void:
     guard_status_label.add_theme_color_override("font_color",
         Color("#ff737e") if guard_exhausted or guard_stamina < 20.0 else Color("#80d9ff"))
     update_enemy_energy_label()
-    cooldown_label.text = ("РЫВОК %.1fс • " % dash_cooldown if dash_cooldown > 0.0 else "РЫВОК ГОТОВ • ") + ("✦ ПАРИРОВАНИЕ! • " if parry_window > 0.0 else "") + ("⚡ ПРОБИТ БЛОК! • " if guard_break_flash > 0.0 else "") + ("⚠ ВРАГ ГОТОВИТ УДАР!  " if enemy_windup > 0.0 else "") + ("ЩИТ ИСТОЩЕН • " if guard_exhausted else "ЩИТ %d/100 • " % int(guard_stamina)) + ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
+    cooldown_label.text = ("ВРАГ: %s • " % CombatRules.attack_level_label(enemy_attack_level) if enemy_windup > 0.0 else "") + ("РЫВОК %.1fс • " % dash_cooldown if dash_cooldown > 0.0 else "РЫВОК ГОТОВ • ") + ("✦ ПАРИРОВАНИЕ! • " if parry_window > 0.0 else "") + ("⚡ ПРОБИТ БЛОК! • " if guard_break_flash > 0.0 else "") + ("⚠ ВРАГ ГОТОВИТ УДАР!  " if enemy_windup > 0.0 else "") + ("ЩИТ ИСТОЩЕН • " if guard_exhausted else "ЩИТ %d/100 • " % int(guard_stamina)) + ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
     update_health_labels()
     queue_redraw()
 
@@ -1812,12 +1831,12 @@ func _draw() -> void:
     draw_arc(Vector2(640, 180), 116, 0.0, TAU, 80, Color("#ff8a9d", 0.72), 4.0)
     draw_rect(Rect2(0, 610, 1280, 110), Color("#2a2544"))
     draw_line(Vector2(0, 610), Vector2(1280, 610), Color("#8e84be"), 4)
-    if not in_menu:
+    if not in_menu and not round_over:
         draw_circle(joystick_center, 72.0, Color("#3b3558", 0.78))
         draw_arc(joystick_center, 72.0, 0.0, TAU, 48, Color("#aa9bcf"), 3.0)
-        draw_circle(joystick_center + Vector2(joystick_axis * 43.0, 0), 32.0, Color("#9788c2", 0.9))
-    draw_sprite_fighter(Vector2(x_left, y_left), selected_fighter, x_right >= x_left, player_motion, player_attack_fx, player_hit_fx, hp_left)
-    draw_sprite_fighter(Vector2(x_right, 610), enemy_fighter, x_left >= x_right, enemy_motion, enemy_attack_fx, enemy_hit_fx, hp_right)
+        draw_circle(joystick_center + joystick_axis * 43.0, 32.0, Color("#9788c2", 0.9))
+    draw_sprite_fighter(Vector2(x_left, y_left), selected_fighter, x_right >= x_left, player_motion, player_attack_fx, player_hit_fx, hp_left, player_crouching, player_attack_level)
+    draw_sprite_fighter(Vector2(x_right, 610), enemy_fighter, x_left >= x_right, enemy_motion, enemy_attack_fx, enemy_hit_fx, hp_right, false, enemy_attack_level)
     if parry_window > 0.0:
         draw_arc(Vector2(x_left, y_left - 115.0), 92.0, 0.0, TAU, 40,
             Color("#8ef2d6", 0.95), 7.0)
@@ -1875,13 +1894,13 @@ func _draw() -> void:
     var time_color := Color("#ff8b9e") if round_seconds <= 10.0 else Color("#71d7ff")
     draw_rect(Rect2(570, 110, 140.0 * time_fraction, 6), time_color)
 
-func draw_sprite_fighter(origin: Vector2, fighter_id: int, face_right: bool, motion: float, attack_fx: float, hit_fx: float, health: int) -> void:
+func draw_sprite_fighter(origin: Vector2, fighter_id: int, face_right: bool, motion: float, attack_fx: float, hit_fx: float, health: int, crouched: bool, strike_level: int) -> void:
     if fighter_id >= fighter_textures.size() or fighter_textures[fighter_id] == null:
         return
     var bob := sin(animation_clock * 12.0) * 3.0 if absf(motion) > 0.1 else sin(animation_clock * 2.0) * 1.7
     var direction := 1.0 if face_right else -1.0
-    var body_height := 235.0
-    var body_width := 145.0
+    var body_height := 175.0 if crouched else 300.0
+    var body_width := 185.0
     var lean := attack_fx * 95.0 * direction - hit_fx * 80.0 * direction
     var squash := 1.0 + 0.035 * sin(animation_clock * 9.0) if absf(motion) > 0.1 else 1.0
     body_height *= squash
@@ -1895,8 +1914,9 @@ func draw_sprite_fighter(origin: Vector2, fighter_id: int, face_right: bool, mot
     draw_texture_rect(fighter_textures[fighter_id], destination, false, Color("#ffd6d6") if hit_fx > 0.0 else costume_tint)
     if attack_fx > 0.0:
         var glow := Color("#9eeaff") if fighter_id == 0 else Color("#ff9da7") if fighter_id == 1 else Color("#f9d799") if fighter_id == 2 else Color("#caa1ff")
-        var hand := origin + Vector2(42.0 * direction, -135.0)
-        var tip := hand + Vector2(110.0 * direction, -42.0)
+        var strike_height := -220.0 if strike_level > 0 else -75.0 if strike_level < 0 else -140.0
+        var hand := origin + Vector2(42.0 * direction, strike_height)
+        var tip := hand + Vector2(110.0 * direction, -22.0 if strike_level > 0 else 28.0 if strike_level < 0 else -5.0)
         draw_line(hand, tip, glow, 9.0)
         draw_line(hand, tip, Color.WHITE, 2.0)
         draw_arc(tip, 35.0, 0.0, TAU, 24, Color(glow, 0.45), 5.0)
