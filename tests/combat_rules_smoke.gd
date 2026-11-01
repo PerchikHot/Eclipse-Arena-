@@ -101,7 +101,7 @@ func _initialize() -> void:
     assert(Rules.result_font_size(Vector2(640, 360)) == 14)
     assert(Rules.result_font_size(Vector2(480, 800)) == 16)
     assert(Rules.result_font_size(Vector2(1280, 720)) == 19)
-    for viewport in [Vector2(320, 240), Vector2(640, 360), Vector2(800, 360), Vector2(360, 640), Vector2(480, 800), Vector2(1280, 720)]:
+    for viewport in [Vector2(200, 180), Vector2(240, 180), Vector2(300, 200), Vector2(320, 240), Vector2(640, 360), Vector2(800, 360), Vector2(360, 640), Vector2(480, 800), Vector2(1280, 720)]:
         var rects := Rules.result_overlay_rects(viewport)
         var panel: Rect2 = rects["panel"]
         var change: Rect2 = rects["change"]
