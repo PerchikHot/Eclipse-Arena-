@@ -25,6 +25,10 @@ func _initialize() -> void:
         and Rules.guard_readiness_label(12.0, false) == "ЗАЩИТА: МАЛО 12%"
         and Rules.guard_readiness_label(40.0, true) == "ЗАЩИТА: ПЕРЕГРЕВ"
         and Rules.guard_readiness_label(150.0, false) == "ЗАЩИТА: 100%"
+        and Rules.health_advantage_label(100, 100) == "HP: РАВНО"
+        and Rules.health_advantage_label(90, 60) == "HP: ПРЕИМУЩЕСТВО +30"
+        and Rules.health_advantage_label(25, 90) == "HP: ОТСТАВАНИЕ 65"
+        and Rules.health_advantage_label(-10, 150) == "HP: ОТСТАВАНИЕ 100"
         and Rules.next_defense_streak(0, true) == 1
         and Rules.next_defense_streak(3, true) == 4
         and Rules.next_defense_streak(4, false) == 0
