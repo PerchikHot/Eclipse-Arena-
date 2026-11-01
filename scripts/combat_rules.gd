@@ -184,3 +184,27 @@ static func level_damage(base_damage: int, level: int) -> int:
     if level < 0:
         return maxi(1, base_damage - 2)
     return maxi(1, base_damage)
+
+
+# Fit the scrollable results panel and both actions inside a small mobile
+# viewport. No result statistics or buttons may extend beyond the safe inset.
+# This is pure layout math, shared by Android and Windows.
+static func result_overlay_rects(viewport: Vector2) -> Dictionary:
+    var width := maxf(320.0, viewport.x)
+    var height := maxf(400.0, viewport.y)
+    var panel_width := minf(720.0, width - 32.0)
+    var top := clampf(height * 0.18, 70.0, 160.0)
+    var panel_height := minf(438.0, height - top - 100.0)
+    var left := (width - panel_width) * 0.5
+    var panel := Rect2(left, top, panel_width, panel_height)
+    var button_width := minf(210.0, (panel_width - 12.0) * 0.5)
+    var button_height := 56.0
+    var group_width := button_width * 2.0 + 12.0
+    var group_left := (width - group_width) * 0.5
+    var button_y := top + panel_height + 12.0
+    return {
+        "panel": panel,
+        "change": Rect2(group_left, button_y, button_width, button_height),
+        "restart": Rect2(group_left + button_width + 12.0,
+            button_y, button_width, button_height),
+    }
