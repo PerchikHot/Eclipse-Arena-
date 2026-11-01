@@ -1869,7 +1869,9 @@ func _process(delta: float) -> void:
     guard_status_label.add_theme_color_override("font_color",
         Color("#ff737e") if guard_exhausted or guard_stamina < 20.0 else Color("#80d9ff"))
     update_enemy_energy_label()
-    cooldown_label.text = ("ВРАГ: %s • " % CombatRules.attack_level_label(enemy_attack_level) if enemy_windup > 0.0 else "") + ("РЫВОК %.1fс • " % dash_cooldown if dash_cooldown > 0.0 else "РЫВОК ГОТОВ • ") + ("✦ ПАРИРОВАНИЕ! • " if parry_window > 0.0 else "") + ("⚡ ПРОБИТ БЛОК! • " if guard_break_flash > 0.0 else "") + ("⚠ ВРАГ ГОТОВИТ УДАР!  " if enemy_windup > 0.0 else "") + ("ЩИТ ИСТОЩЕН • " if guard_exhausted else "ЩИТ %d/100 • " % int(guard_stamina)) + ("БЛОК • " if block_timer > 0.0 else "") + ("КОМБО %d  " % combo_hits if combo_hits > 1 else "") + ("ГОТОВО" if attack_cooldown <= 0.0 else "УДАР %.1fс" % attack_cooldown)
+    cooldown_label.text = CombatRules.compact_combat_cue(enemy_windup,
+        enemy_attack_level, guard_break_flash, parry_window,
+        attack_cooldown, dash_cooldown, combo_hits)
     update_health_labels()
     queue_redraw()
 
