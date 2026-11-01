@@ -1737,7 +1737,11 @@ func _draw() -> void:
     for i in range(8):
         var px := float(i * 195 - 80)
         draw_colored_polygon(PackedVector2Array([Vector2(px, 610), Vector2(px + 110, 280 + (i % 3) * 42), Vector2(px + 210, 610)]), Color("#1c1a3b"))
-    draw_circle(Vector2(640, 180), 110, Color("#42396e"))
+    # A layered red eclipse behind the fighters anchors the arena's identity.
+    draw_circle(Vector2(640, 180), 132, Color("#512443", 0.45))
+    draw_circle(Vector2(640, 180), 112, Color("#c64d65", 0.65))
+    draw_circle(Vector2(640, 180), 94, Color("#151b35"))
+    draw_arc(Vector2(640, 180), 116, 0.0, TAU, 80, Color("#ff8a9d", 0.72), 4.0)
     draw_rect(Rect2(0, 610, 1280, 110), Color("#2a2544"))
     draw_line(Vector2(0, 610), Vector2(1280, 610), Color("#8e84be"), 4)
     if not in_menu:
@@ -1766,13 +1770,24 @@ func _draw() -> void:
         draw_rect(Rect2(0, 0, 1280, 610), Color(1.0, 0.9, 0.96, impact_flash))
     # Верхняя панель: здоровье, энергия, таймер и текущий раунд.
     draw_rect(Rect2(0, 0, 1280, 125), Color("#0c0c20", 0.89))
-    draw_rect(Rect2(35, 39, 460, 30), Color("#353248"))
-    draw_rect(Rect2(785, 39, 460, 30), Color("#353248"))
+    draw_rect(Rect2(35, 39, 460, 30), Color("#172947"))
+    draw_rect(Rect2(785, 39, 460, 30), Color("#172947"))
+    draw_rect(Rect2(35, 39, 460, 30), Color("#5589bf"), false, 2.0)
+    draw_rect(Rect2(785, 39, 460, 30), Color("#bd6787"), false, 2.0)
     # Highlight critical HP for both fighters without changing damage rules.
     var player_hp_color := Color("#ffb36c") if hp_left <= 25 else Color("#64e5ae")
     var enemy_hp_color := Color("#ff556e") if hp_right <= 25 else Color("#f27d98")
     draw_rect(Rect2(40, 44, float(hp_left) * 4.5, 20), player_hp_color)
     draw_rect(Rect2(1240 - float(hp_right) * 4.5, 44, float(hp_right) * 4.5, 20), enemy_hp_color)
+    # Quarter markers and critical-state outlines remain legible on small screens.
+    for step in range(1, 4):
+        var marker := float(step) * 112.5
+        draw_line(Vector2(40.0 + marker, 44), Vector2(40.0 + marker, 64), Color("#0b1830", 0.7), 2.0)
+        draw_line(Vector2(790.0 + marker, 44), Vector2(790.0 + marker, 64), Color("#0b1830", 0.7), 2.0)
+    if hp_left <= 25:
+        draw_rect(Rect2(35, 39, 460, 30), Color("#ff637d", 0.55 + 0.35 * sin(animation_clock * 7.0)), false, 3.0)
+    if hp_right <= 25:
+        draw_rect(Rect2(785, 39, 460, 30), Color("#ff637d", 0.55 + 0.35 * sin(animation_clock * 7.0)), false, 3.0)
     draw_rect(Rect2(35, 78, 460, 14), Color("#29253f"))
     draw_rect(Rect2(785, 78, 460, 14), Color("#29253f"))
     draw_rect(Rect2(40, 81, skill_energy * 4.5, 8), Color("#b49aff"))
