@@ -31,6 +31,8 @@ var player_hit_fx := 0.0
 var enemy_hit_fx := 0.0
 var ai_timer := 0.0
 var ai_retreat := false
+var enemy_guarding := false
+var enemy_crouching := false
 var ai_difficulty := 1  # 0: novice, 1: normal, 2: master
 var animation_clock := 0.0
 var player_motion := 0.0
@@ -1275,6 +1277,8 @@ func restart_round() -> void:
     enemy_hit_fx = 0.0
     ai_timer = 0.0
     ai_retreat = false
+    enemy_guarding = false
+    enemy_crouching = false
     result_panel.visible = false
     if not in_menu:
         for key in controls.keys():
@@ -1716,7 +1720,7 @@ func _process(delta: float) -> void:
         player_attack_fx = 0.18
         play_sound("swing")
         var attack_height_range := 265.0 if player_attack_level > 0 else 115.0
-        if absf(x_left - x_right) < (195.0 if can_skill else 155.0) and absf(y_left - 610.0) < attack_height_range:
+        if absf(x_left - x_right) < (195.0 if can_skill else 155.0) and absf(y_left - 610.0) < attack_height_range and CombatRules.attack_connects(player_attack_level, enemy_crouching, false):
             combo_hits += 1
             hits_landed += 1
             best_combo = maxi(best_combo, combo_hits)
@@ -1727,7 +1731,7 @@ func _process(delta: float) -> void:
             combo_timer = 1.3
             var hp_before_hit := hp_right
             # Same tested damage rule for touch and keyboard combat.
-            var guarding_target := training_mode and training_target_guarding
+            var guarding_target := (training_mode and training_target_guarding) or (not training_mode and enemy_guarding and CombatRules.guard_covers_level(enemy_crouching, player_attack_level))
             var attack_damage := CombatRules.level_damage(
                 CombatRules.player_attack_damage(combo_hits, can_skill, guarding_target),
                 player_attack_level)
@@ -1754,7 +1758,13 @@ func _process(delta: float) -> void:
         if ai_timer <= 0.0:
             ai_timer = [1.8, 1.1, 0.6][ai_difficulty]
             ai_retreat = distance < 185.0 and randf() < [0.18, 0.35, 0.50][ai_difficulty]
+            # Experienced rivals defend at different heights. The guard is
+            # sampled per decision, never randomly per frame.
+            enemy_guarding = distance < 190.0 and randf() < [0.10, 0.32, 0.52][ai_difficulty]
+            enemy_crouching = enemy_guarding and randf() < 0.48
         if enemy_windup > 0.0:
+            enemy_guarding = false
+            enemy_crouching = false
             enemy_motion = 0.0
         elif ai_retreat and distance < 240.0:
             enemy_motion = -signf(x_left - x_right)
@@ -1821,6 +1831,8 @@ func _process(delta: float) -> void:
                             return
                 enemy_pending_special = false
         elif absf(x_left - x_right) < 140.0 and absf(y_left - 610.0) < 120.0 and enemy_cooldown <= 0.0:
+            enemy_guarding = false
+            enemy_crouching = false
             enemy_pending_special = enemy_energy >= skill_cost and randf() < 0.55
             enemy_attack_level = 0 if enemy_pending_special else randi_range(-1, 1)
             if enemy_pending_special:
@@ -1855,7 +1867,9 @@ func _draw() -> void:
         draw_arc(joystick_center, 72.0, 0.0, TAU, 48, Color("#aa9bcf"), 3.0)
         draw_circle(joystick_center + joystick_axis * 43.0, 32.0, Color("#9788c2", 0.9))
     draw_sprite_fighter(Vector2(x_left, y_left), selected_fighter, x_right >= x_left, player_motion, player_attack_fx, player_hit_fx, hp_left, player_crouching, player_attack_level)
-    draw_sprite_fighter(Vector2(x_right, 610), enemy_fighter, x_left >= x_right, enemy_motion, enemy_attack_fx, enemy_hit_fx, hp_right, false, enemy_attack_level)
+    draw_sprite_fighter(Vector2(x_right, 610), enemy_fighter, x_left >= x_right, enemy_motion, enemy_attack_fx, enemy_hit_fx, hp_right, enemy_crouching, enemy_attack_level)
+    if enemy_guarding and not training_mode:
+        draw_arc(Vector2(x_right, 610 - (82.0 if enemy_crouching else 168.0)), 65.0, -2.3, 0.4, 28, Color("#85caff", 0.8), 5.0)
     if parry_window > 0.0:
         draw_arc(Vector2(x_left, y_left - 115.0), 92.0, 0.0, TAU, 40,
             Color("#8ef2d6", 0.95), 7.0)
