@@ -241,3 +241,23 @@ static func result_overlay_rects(viewport: Vector2) -> Dictionary:
         "restart": Rect2(group_left + button_width + 8.0,
             button_y, button_width, button_height),
     }
+
+# The HUD must fit a 720p mobile viewport. Shield and enemy energy have
+# dedicated labels; show the most actionable combat cue here, not a giant
+# concatenation that hides fighters and touch controls.
+static func compact_combat_cue(enemy_windup: float, enemy_level: int,
+        guard_break_flash: float, parry_window: float,
+        attack_cooldown: float, dash_cooldown: float, combo_hits: int) -> String:
+    if enemy_windup > 0.0:
+        return "⚠ ВРАГ: " + attack_level_label(enemy_level)
+    if guard_break_flash > 0.0:
+        return "⚡ БЛОК ПРОБИТ"
+    if parry_window > 0.0:
+        return "✦ ПАРИРОВАНИЕ"
+    if attack_cooldown > 0.0:
+        return "УДАР %.1fс" % attack_cooldown
+    if dash_cooldown > 0.0:
+        return "РЫВОК %.1fс" % dash_cooldown
+    if combo_hits > 1:
+        return "КОМБО %d" % combo_hits
+    return "ГОТОВО К БОЮ"
