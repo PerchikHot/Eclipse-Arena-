@@ -1259,6 +1259,8 @@ func finish_round(outcome: int) -> void:
     var grade := CombatRules.round_performance_grade(outcome,
         hits_landed, attacks_attempted, damage_dealt, damage_taken, successful_parries)
     result_label.text += "\n✦ РЕЙТИНГ БОЯ: %s  •  %d/100" % [grade, performance]
+    result_label.text += "\n" + CombatRules.round_training_tip(
+        hits_landed, attacks_attempted, damage_dealt, damage_taken, successful_parries)
     result_label.add_theme_color_override("font_color",
         Color("#ffe08c") if grade in ["S", "A"] else Color("#c3dcff"))
     # Ranked career stats persist between sessions, but training never
