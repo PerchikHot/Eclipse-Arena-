@@ -201,14 +201,17 @@ static func result_overlay_rects(viewport: Vector2) -> Dictionary:
     # Landscape phones can have less than 400 logical pixels in height.
     # Never invent a larger viewport: that placed the action buttons below
     # the bottom edge (e.g. 640x360 on Android).
-    var width := maxf(200.0, viewport.x)
-    var height := maxf(180.0, viewport.y)
-    var panel_width := minf(720.0, width - 16.0)
+    # Android split-screen and foldable windows can be smaller than 200x180.
+    # Do not invent screen space: the result card must remain inside the
+    # actual viewport even when the OS resizes the game mid-round.
+    var width := maxf(1.0, viewport.x)
+    var height := maxf(1.0, viewport.y)
+    var panel_width := minf(720.0, maxf(1.0, width - 16.0))
     var top := clampf(height * 0.12, 8.0, 70.0)
     # Reserve room for BOTH actions before allocating the scrollable panel.
     # Older 240px minimum height could place buttons below tiny landscape UI.
-    var button_height := minf(56.0, maxf(36.0, height * 0.22))
-    var panel_height := maxf(48.0, minf(438.0,
+    var button_height := minf(56.0, maxf(16.0, height * 0.22))
+    var panel_height := maxf(1.0, minf(438.0,
         height - top - button_height - 20.0))
     var left := (width - panel_width) * 0.5
     var panel := Rect2(left, top, panel_width, panel_height)
