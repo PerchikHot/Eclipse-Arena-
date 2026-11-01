@@ -79,6 +79,11 @@ func _initialize() -> void:
         and Rules.touch_direction(Vector2(112, 701), Vector2(112, 643)) == Vector2.DOWN
         and Rules.touch_direction(Vector2(170, 643), Vector2(112, 643)) == Vector2.RIGHT
         and Rules.touch_direction(Vector2(200, 643), Vector2(112, 643)).length() <= 1.0
+        and Rules.should_start_jump(true, false, true, false)
+        and not Rules.should_start_jump(true, true, true, false)
+        and not Rules.should_start_jump(true, false, false, false)
+        and not Rules.should_start_jump(true, false, true, true)
+        and not Rules.should_start_jump(false, false, true, false)
         and Rules.attack_level(-1.0) == 1
         and Rules.attack_level(0.0) == 0
         and Rules.attack_level(1.0) == -1
