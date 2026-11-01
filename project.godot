@@ -2,7 +2,7 @@ config_version=5
 
 [application]
 config/name="Eclipse Arena"
-config/version="0.42.3"
+config/version="0.42.5"
 config/icon="res://assets/launcher.webp"
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
