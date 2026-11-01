@@ -76,6 +76,8 @@ var joystick_touch := -1
 var combo_hits := 0
 var best_combo := 0
 var personal_best_combo := 0
+# Total ranked rounds survive restarts; training never modifies these counts.
+var career_record := Vector3i.ZERO
 var personal_record_label: Label
 var damage_dealt := 0
 var damage_taken := 0
@@ -199,6 +201,17 @@ func _ready() -> void:
         var stored_best = saved_settings.get_value("records", "best_combo", 0)
         if typeof(stored_best) == TYPE_INT and stored_best >= 0 and stored_best <= 9999:
             personal_best_combo = stored_best
+        var career_values := Vector3i.ZERO
+        for field in ["career_wins", "career_losses", "career_draws"]:
+            var saved_count = saved_settings.get_value("records", field, 0)
+            if typeof(saved_count) == TYPE_INT and saved_count >= 0 and saved_count <= 99999:
+                if field == "career_wins":
+                    career_values.x = saved_count
+                elif field == "career_losses":
+                    career_values.y = saved_count
+                else:
+                    career_values.z = saved_count
+        career_record = career_values
     for character in ["yamato", "erza", "alpha", "rias"]:
         fighter_textures.append(load("res://assets/fighters/%s.svg" % character))
     sound_library["swing"] = make_sound(0.13, 220.0, 90.0, 0.14, 0)
@@ -1209,12 +1222,18 @@ func finish_round(outcome: int) -> void:
         result_label.text += "\nТОЧНОСТЬ: %d%% (%d из %d)" % [accuracy, hits_landed, attacks_attempted]
     if best_combo > 1:
         result_label.text += "\nКОМБО: %d  •  ЛИЧНЫЙ РЕКОРД: %d" % [best_combo, personal_best_combo]
-    # Write only at the end of a round to avoid disk I/O on every hit.
-    if personal_best_combo > 1:
-        var record_settings := ConfigFile.new()
-        record_settings.load("user://settings.cfg")
-        record_settings.set_value("records", "best_combo", personal_best_combo)
-        record_settings.save("user://settings.cfg")
+    # Ranked career stats persist between sessions, but training never
+    # enters finish_round. Save once at the end, not after each hit.
+    career_record = CombatRules.next_career_record(career_record, outcome)
+    result_label.text += "\nКАРЬЕРА: %d побед / %d поражений / %d ничьих" % [
+        career_record.x, career_record.y, career_record.z]
+    var record_settings := ConfigFile.new()
+    record_settings.load("user://settings.cfg")
+    record_settings.set_value("records", "best_combo", personal_best_combo)
+    record_settings.set_value("records", "career_wins", career_record.x)
+    record_settings.set_value("records", "career_losses", career_record.y)
+    record_settings.set_value("records", "career_draws", career_record.z)
+    record_settings.save("user://settings.cfg")
     score_label.text = "ИГРОК %d : %d ПРОТИВНИК  •  НИЧЬИХ: %d" % [player_wins, enemy_wins, draws]
     match_finished = match_target_wins > 0 and (player_wins >= match_target_wins or enemy_wins >= match_target_wins)
     if match_finished:
