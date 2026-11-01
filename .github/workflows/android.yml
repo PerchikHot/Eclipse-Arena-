@@ -80,6 +80,51 @@ jobs:
         run: |
           test -s build/EclipseArena-debug.apk
           unzip -l build/EclipseArena-debug.apk | grep -E "res/mipmap|res/drawable" >/dev/null
+      - name: Verify APK certificate, package and upgrade version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          APK=build/EclipseArena-debug.apk
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          test -x "$APKSIGNER" && test -x "$AAPT"
+          "$APKSIGNER" verify --print-certs "$APK"
+          get_cert() {
+            "$APKSIGNER" verify --print-certs "$1" |
+              sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1
+          }
+          get_package() {
+            "$AAPT" dump badging "$1" | grep '^package:' | head -n 1
+          }
+          NEW_CERT="$(get_cert "$APK")"
+          NEW_PACKAGE="$(get_package "$APK")"
+          test -n "$NEW_CERT" && test -n "$NEW_PACKAGE"
+          if gh release view eclipse-arena-android --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            mkdir -p "$RUNNER_TEMP/previous-eclipse"
+            gh release download eclipse-arena-android --repo "$GITHUB_REPOSITORY" \
+              --pattern 'EclipseArena-debug.apk' --dir "$RUNNER_TEMP/previous-eclipse"
+            OLD="$RUNNER_TEMP/previous-eclipse/EclipseArena-debug.apk"
+            test -s "$OLD"
+            OLD_CERT="$(get_cert "$OLD")"
+            OLD_PACKAGE="$(get_package "$OLD")"
+            test -n "$OLD_CERT" && test "$OLD_CERT" = "$NEW_CERT" || {
+              echo "::error::Android signing certificate SHA-256 changed; in-place update unsafe"; exit 1;
+            }
+            OLD_ID="$(echo "$OLD_PACKAGE" | grep -o "name='[^']*'" | head -n 1)"
+            NEW_ID="$(echo "$NEW_PACKAGE" | grep -o "name='[^']*'" | head -n 1)"
+            test "$OLD_ID" = "$NEW_ID" || {
+              echo "::error::Android application ID changed"; exit 1;
+            }
+            OLD_CODE="$(echo "$OLD_PACKAGE" | grep -o "versionCode='[0-9]*'" | cut -d "'" -f 2)"
+            NEW_CODE="$(echo "$NEW_PACKAGE" | grep -o "versionCode='[0-9]*'" | cut -d "'" -f 2)"
+            test -n "$OLD_CODE" && test -n "$NEW_CODE" && test "$NEW_CODE" -gt "$OLD_CODE" || {
+              echo "::error::Android versionCode must increase ($OLD_CODE -> $NEW_CODE)"; exit 1;
+            }
+            echo "Upgrade verified: same package, same certificate SHA-256, $OLD_CODE -> $NEW_CODE"
+          else
+            echo "No previous Android release; checking current signature only."
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: EclipseArena-Android-debug
