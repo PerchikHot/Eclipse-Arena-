@@ -612,8 +612,8 @@ func _ready() -> void:
         selection_layer.add_child(fighter_button)
         selection_buttons.append(fighter_button)
     selection_preview = TextureRect.new()
-    selection_preview.position = Vector2(520, 485)
-    selection_preview.size = Vector2(75, 118)
+    selection_preview.position = Vector2(405, 470)
+    selection_preview.size = Vector2(180, 208)
     selection_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
     selection_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
     selection_layer.add_child(selection_preview)
@@ -1944,8 +1944,9 @@ func draw_sprite_fighter(origin: Vector2, fighter_id: int, face_right: bool, mot
         return
     var bob := sin(animation_clock * 12.0) * 3.0 if absf(motion) > 0.1 else sin(animation_clock * 2.0) * 1.7
     var direction := 1.0 if face_right else -1.0
-    var body_height := 175.0 if crouched else 300.0
-    var body_width := 185.0
+    var sprite_size := CombatRules.fighter_sprite_size(crouched)
+    var body_height := sprite_size.y
+    var body_width := sprite_size.x
     var lean := attack_fx * 95.0 * direction - hit_fx * 80.0 * direction
     var squash := 1.0 + 0.035 * sin(animation_clock * 9.0) if absf(motion) > 0.1 else 1.0
     body_height *= squash
