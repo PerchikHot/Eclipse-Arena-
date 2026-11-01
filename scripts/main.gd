@@ -22,6 +22,7 @@ var enemy_wins := 0
 var draws := 0
 var score_label: Label
 var result_label: Label
+var result_panel: PanelContainer
 var restart_button: Button
 var change_fighter_button: Button
 var player_attack_fx := 0.0
@@ -353,12 +354,34 @@ func _ready() -> void:
     fps_label.add_theme_color_override("font_color", Color("#58c9ff"))
     fps_label.visible = fps_enabled and not OS.has_feature("mobile")
     add_child(fps_label)
+    # The arena remains visible behind a bounded, scrollable results card.
+    result_panel = PanelContainer.new()
+    result_panel.position = Vector2(280, 170)
+    result_panel.size = Vector2(720, 438)
+    result_panel.visible = false
+    var result_style := StyleBoxFlat.new()
+    result_style.bg_color = Color("#101b35", 0.97)
+    result_style.border_color = Color("#70bce9")
+    result_style.set_border_width_all(3)
+    result_style.set_corner_radius_all(20)
+    result_panel.add_theme_stylebox_override("panel", result_style)
+    add_child(result_panel)
+    var result_margin := MarginContainer.new()
+    result_margin.add_theme_constant_override("margin_left", 24)
+    result_margin.add_theme_constant_override("margin_right", 24)
+    result_margin.add_theme_constant_override("margin_top", 18)
+    result_margin.add_theme_constant_override("margin_bottom", 18)
+    result_panel.add_child(result_margin)
+    var result_scroll := ScrollContainer.new()
+    result_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    result_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    result_margin.add_child(result_scroll)
     result_label = Label.new()
-    result_label.position = Vector2(500, 280)
-    # Round statistics fit on mobile without overlapping rematch buttons.
-    result_label.add_theme_font_size_override("font_size", 30)
-    result_label.visible = false
-    add_child(result_label)
+    result_label.custom_minimum_size = Vector2(650, 0)
+    result_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    result_label.add_theme_font_size_override("font_size", 19)
+    result_label.add_theme_color_override("font_color", Color("#d7ebff"))
+    result_scroll.add_child(result_label)
     restart_button = Button.new()
     restart_button.text = "ЗАНОВО" if OS.has_feature("mobile") else "ЗАНОВО (R)"
     restart_button.position = Vector2(740, 625)
@@ -917,7 +940,7 @@ func show_menu() -> void:
     enemy_name_label.visible = false
     restart_button.visible = false
     change_fighter_button.visible = false
-    result_label.visible = false
+    result_panel.visible = false
 
 func training_target_caption() -> String:
     if not training_target_moves:
@@ -1103,7 +1126,7 @@ func start_game() -> void:
     enemy_name_label.visible = true
     restart_button.visible = round_over
     change_fighter_button.visible = round_over
-    result_label.visible = round_over
+    result_panel.visible = round_over
     update_health_labels()
 
 # Warn before the opponent has enough energy for a special attack.
@@ -1227,7 +1250,13 @@ func restart_round() -> void:
     enemy_hit_fx = 0.0
     ai_timer = 0.0
     ai_retreat = false
-    result_label.visible = false
+    result_panel.visible = false
+    if not in_menu:
+        for key in controls.keys():
+            controls[key].visible = true
+        dash_button.visible = true
+        cooldown_label.visible = true
+        accuracy_label.visible = true
     restart_button.visible = false
     change_fighter_button.visible = false
     queue_redraw()
@@ -1303,7 +1332,12 @@ func finish_round(outcome: int) -> void:
         restart_button.text = "НОВЫЙ МАТЧ" if OS.has_feature("mobile") else "НОВЫЙ МАТЧ (R)"
     else:
         restart_button.text = "СЛЕД. РАУНД" if OS.has_feature("mobile") else "СЛЕД. РАУНД (R)"
-    result_label.visible = true
+    result_panel.visible = true
+    for key in controls.keys():
+        controls[key].visible = false
+    dash_button.visible = false
+    cooldown_label.visible = false
+    accuracy_label.visible = false
     restart_button.visible = true
     change_fighter_button.visible = true
 
