@@ -195,6 +195,19 @@ static func attack_connects(level: int, target_crouched: bool, target_airborne: 
         return false
     return true
 
+# Training dummy uses the same height rules as ranked AI. The result is
+# pure, so touch and keyboard controls cannot disagree on low/high defense.
+# Dodge includes moving through the hit with dash invulnerability or
+# correctly crouching under a high strike / jumping over a low strike.
+static func training_defense_outcome(level: int, crouched: bool,
+        airborne: bool, dashing: bool, guarding: bool,
+        parry_active: bool) -> String:
+    if dashing or not attack_connects(level, crouched, airborne):
+        return "dodge"
+    if guarding and guard_covers_level(crouched, level):
+        return "parry" if parry_active else "block"
+    return "hit"
+
 # Successful unguarded hits briefly interrupt the AI's movement and windup.
 # A blocked hit never grants free stun; specials create a longer opening.
 static func hitstun_seconds(level: int, special: bool, blocked: bool) -> float:
