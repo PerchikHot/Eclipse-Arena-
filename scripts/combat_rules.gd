@@ -258,6 +258,14 @@ static func active_guard_timer(requested: bool, exhausted: bool,
         previous: float) -> float:
     return maxf(0.0, previous) if requested and not exhausted else 0.0
 
+# After absorbing a hit, guard stamina must not refill instantly when the
+# player briefly releases BLOCK. A successful parry has a shorter recovery.
+# This is the same deterministic rule for touch, keyboard and gamepad.
+static func guard_regen_per_second(recovery_delay: float, exhausted: bool) -> float:
+    if recovery_delay > 0.0:
+        return 0.0
+    return 28.0 if exhausted else 20.0
+
 # Standing guard covers the head, crouching guard covers the legs. Both
 # cover the torso; attacks against the wrong guard height are unblocked.
 static func guard_covers_level(crouched: bool, level: int) -> bool:
