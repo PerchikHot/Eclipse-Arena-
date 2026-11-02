@@ -146,6 +146,16 @@ func _initialize() -> void:
     assert(is_equal_approx(Rules.attack_cooldown_for_level(-1, false), 0.49))
     assert(is_equal_approx(Rules.attack_cooldown_for_level(1, true), 0.80))
     assert(Rules.attack_cooldown_for_level(0, false) < Rules.attack_cooldown_for_level(-1, false))
+    # The AI obeys the same high/low recovery as touch and keyboard attacks.
+    assert(is_equal_approx(Rules.ai_attack_cooldown(0, false, 1), 0.95))
+    assert(Rules.ai_attack_cooldown(1, false, 1) >
+        Rules.ai_attack_cooldown(-1, false, 1))
+    assert(Rules.ai_attack_cooldown(-1, false, 1) >
+        Rules.ai_attack_cooldown(0, false, 1))
+    assert(Rules.ai_attack_cooldown(0, true, 1) >
+        Rules.ai_attack_cooldown(1, false, 1))
+    assert(Rules.ai_attack_cooldown(0, false, 0) >
+        Rules.ai_attack_cooldown(0, false, 2))
     # Guard release must stop a stale blocking window in the same frame.
     assert(is_equal_approx(Rules.active_guard_timer(true, false, 0.15), 0.15))
     assert(Rules.active_guard_timer(false, false, 0.15) == 0.0)

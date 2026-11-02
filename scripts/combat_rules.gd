@@ -230,6 +230,13 @@ static func attack_cooldown_for_level(level: int, special: bool) -> float:
         return 0.49
     return 0.43
 
+# AI shares the player's attack-height recovery. Higher strikes are slower,
+# preventing master difficulty from chaining head attacks at torso speed.
+static func ai_attack_cooldown(level: int, special: bool, difficulty: int) -> float:
+    var base := 1.3 if special else 0.95 + (
+        attack_cooldown_for_level(level, false) - 0.43) * 1.2
+    return base * [1.35, 1.0, 0.78][clampi(difficulty, 0, 2)]
+
 static func attack_level(vertical_axis: float) -> int:
     if vertical_axis < -0.45:
         return 1 # head

@@ -2012,7 +2012,8 @@ func _process(delta: float) -> void:
                 enemy_energy -= skill_cost
             # Novice is easier to read, master reacts faster.
             enemy_windup = [0.65, 0.45, 0.30][ai_difficulty]
-            enemy_cooldown = (1.3 if enemy_pending_special else 0.95) * [1.35, 1.0, 0.78][ai_difficulty]
+            enemy_cooldown = CombatRules.ai_attack_cooldown(
+                enemy_attack_level, enemy_pending_special, ai_difficulty)
     # Communicate when the special attack is usable and when blocking is active.
     skill_label.text = ("СПЕЦ ГОТОВ %d/100" if skill_energy >= skill_cost else "ЭНЕРГИЯ %d/100") % int(skill_energy)
     guard_status_label.text = CombatRules.guard_readiness_label(guard_stamina, guard_exhausted)
