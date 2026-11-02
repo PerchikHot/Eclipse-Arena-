@@ -122,6 +122,13 @@ func _initialize() -> void:
     assert(Rules.compact_combat_cue(0, 0, 0, 0, 0, 0, 5, 0.0, 24) == "⚠ КРИТИЧЕСКОЕ HP")
     assert(Rules.compact_combat_cue(0, 0, 0, 0, 0, 0, 5, 0.0, 26) == "КОМБО 5")
     assert(Rules.compact_combat_cue(0.5, 1, 0, 0, 0, 0, 5, 0.0, 10) == "⚠ ВРАГ: ГОЛОВА")
+    assert(Rules.joystick_center_for_viewport(Vector2(1280, 720)) == Vector2(112, 643))
+    assert(Rules.joystick_center_for_viewport(Vector2(640, 360)) == Vector2(112, 283))
+    assert(Rules.joystick_center_for_viewport(Vector2(320, 240)) == Vector2(76, 163))
+    for screen in [Vector2(120, 90), Vector2(320, 240), Vector2(640, 360)]:
+        var center := Rules.joystick_center_for_viewport(screen)
+        assert(center.x >= 0.0 and center.x <= screen.x)
+        assert(center.y >= 0.0 and center.y <= screen.y)
     assert(Rules.fighter_sprite_size(false) == Vector2(260, 400))
     assert(Rules.fighter_sprite_size(true) == Vector2(260, 236))
     assert(610.0 - Rules.fighter_sprite_size(false).y > 125.0)

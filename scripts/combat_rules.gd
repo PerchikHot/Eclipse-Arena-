@@ -145,6 +145,17 @@ static func health_advantage_label(player_hp: int, enemy_hp: int) -> String:
         return "HP: ПРЕИМУЩЕСТВО +%d" % difference
     return "HP: ОТСТАВАНИЕ %d" % -difference
 
+# Reposition the touch joystick after mobile rotation or a desktop resize.
+# Keep its old 1280x720 location, but do not leave it below the screen in
+# narrow landscape/split-screen viewports. No saved control settings change.
+static func joystick_center_for_viewport(viewport: Vector2) -> Vector2:
+    var width := maxf(1.0, viewport.x)
+    var height := maxf(1.0, viewport.y)
+    return Vector2(
+        minf(width * 0.5, minf(112.0, maxf(76.0, width * 0.20))),
+        maxf(height * 0.5, height - 77.0)
+    )
+
 # Touch and keyboard share these directional combat rules. Screen Y increases
 # downwards: up selects a head strike, down selects a low strike.
 static func touch_direction(position: Vector2, center: Vector2) -> Vector2:

@@ -1149,6 +1149,14 @@ func start_game() -> void:
 func _layout_result_overlay() -> void:
     if result_panel == null or result_label == null or restart_button == null or change_fighter_button == null:
         return
+    # A fixed Y=643 joystick was unreachable on small Android windows.
+    # Drop an active touch on resize so movement cannot stick after rotation.
+    var next_center := CombatRules.joystick_center_for_viewport(get_viewport_rect().size)
+    if next_center != joystick_center:
+        joystick_center = next_center
+        joystick_touch = -1
+        joystick_axis = Vector2.ZERO
+        jump_was_pressed = false
     var rects := CombatRules.result_overlay_rects(get_viewport_rect().size)
     var panel_rect: Rect2 = rects["panel"]
     var restart_rect: Rect2 = rects["restart"]
