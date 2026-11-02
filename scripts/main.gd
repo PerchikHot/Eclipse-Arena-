@@ -2016,8 +2016,10 @@ func _process(delta: float) -> void:
             enemy_attack_level = 0 if enemy_pending_special else randi_range(-1, 1)
             if enemy_pending_special:
                 enemy_energy -= skill_cost
-            # Novice is easier to read, master reacts faster.
-            enemy_windup = [0.65, 0.45, 0.30][ai_difficulty]
+            # Telegraph timing reflects both difficulty and attack height.
+            # A head strike now gives slightly more reaction time than a jab.
+            enemy_windup = CombatRules.ai_windup_seconds(
+                enemy_attack_level, enemy_pending_special, ai_difficulty)
             enemy_cooldown = CombatRules.ai_attack_cooldown(
                 enemy_attack_level, enemy_pending_special, ai_difficulty)
     # Communicate when the special attack is usable and when blocking is active.

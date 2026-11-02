@@ -158,6 +158,13 @@ func _initialize() -> void:
         Rules.ai_attack_cooldown(0, false, 1))
     assert(Rules.ai_attack_cooldown(0, true, 1) >
         Rules.ai_attack_cooldown(1, false, 1))
+    # The live AI windup now gives time to read high/low telegraphs.
+    assert(is_equal_approx(Rules.ai_windup_seconds(0, false, 1), 0.45))
+    assert(is_equal_approx(Rules.ai_windup_seconds(1, false, 1), 0.55))
+    assert(is_equal_approx(Rules.ai_windup_seconds(-1, false, 1), 0.50))
+    assert(is_equal_approx(Rules.ai_windup_seconds(0, true, 1), 0.60))
+    assert(Rules.ai_windup_seconds(1, false, 2) <
+        Rules.ai_windup_seconds(1, false, 0))
     assert(Rules.ai_attack_cooldown(0, false, 0) >
         Rules.ai_attack_cooldown(0, false, 2))
     # Guard release must stop a stale blocking window in the same frame.

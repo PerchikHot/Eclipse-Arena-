@@ -237,6 +237,19 @@ static func ai_attack_cooldown(level: int, special: bool, difficulty: int) -> fl
         attack_cooldown_for_level(level, false) - 0.43) * 1.2
     return base * [1.35, 1.0, 0.78][clampi(difficulty, 0, 2)]
 
+# Height-specific AI telegraphs give mobile players a readable reaction
+# window. Head and low strikes take longer to prepare than a torso jab;
+# specials remain the most visible attack at every difficulty.
+static func ai_windup_seconds(level: int, special: bool, difficulty: int) -> float:
+    var base: float = [0.65, 0.45, 0.30][clampi(difficulty, 0, 2)]
+    if special:
+        return base + 0.15
+    if level > 0:
+        return base + 0.10
+    if level < 0:
+        return base + 0.05
+    return base
+
 static func attack_level(vertical_axis: float) -> int:
     if vertical_axis < -0.45:
         return 1 # head
