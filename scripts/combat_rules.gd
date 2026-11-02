@@ -138,6 +138,22 @@ static func round_training_tip(landed: int, attempted: int, dealt: int,
     return "ОТЛИЧНО: сочетай парирование, комбо и спецприёмы."
 
 
+# One-line mobile combat telemetry. The detailed hit/guard statistics remain
+# available on the scrollable result screen, but must not cover fighters.
+static func compact_accuracy_caption(landed: int, attempted: int,
+        combo: int, best: int, blocks: int) -> String:
+    var caption := "ТОЧН. —"
+    if attempted > 0:
+        caption = "ТОЧН. %d%%" % clampi(roundi(
+            100.0 * float(clampi(landed, 0, attempted)) / float(attempted)), 0, 100)
+    if combo > 1:
+        caption += " • КОМБО x%d" % combo
+    elif best > 1:
+        caption += " • РЕКОРД x%d" % best
+    if blocks > 0:
+        caption += " • БЛОК %d" % blocks
+    return caption
+
 # Readable guard-stamina state for the battle HUD, including accessibility
 # when the small stamina bar is hard to see on an Android display.
 static func guard_readiness_label(stamina: float, exhausted: bool) -> String:

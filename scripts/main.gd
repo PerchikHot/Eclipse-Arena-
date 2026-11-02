@@ -458,6 +458,7 @@ func _ready() -> void:
     accuracy_label.add_theme_font_size_override("font_size", 15)
     accuracy_label.add_theme_color_override("font_color", Color("#80d9ff"))
     add_child(accuracy_label)
+    _layout_accuracy_hud()
     pause_button = Button.new()
     pause_button.text = "МЕНЮ" if OS.has_feature("mobile") else "МЕНЮ (ESC)"
     pause_button.position = Vector2(1100, 132)
@@ -1206,6 +1207,23 @@ func _layout_result_overlay() -> void:
     restart_button.size = restart_rect.size
     change_fighter_button.position = change_rect.position
     change_fighter_button.size = change_rect.size
+    _layout_accuracy_hud()
+
+# On narrow Android screens keep the combat area free of a large two-line
+# desktop statistics panel. Full details are still visible after the round.
+func _layout_accuracy_hud() -> void:
+    if accuracy_label == null:
+        return
+    var viewport := get_viewport_rect().size
+    accuracy_label.visible = viewport.x >= 480.0
+    if viewport.x < 900.0:
+        accuracy_label.position = Vector2(viewport.x * 0.30, maxf(0.0, viewport.y - 52.0))
+        accuracy_label.size = Vector2(viewport.x * 0.64, 42.0)
+        accuracy_label.add_theme_font_size_override("font_size", 12)
+    else:
+        accuracy_label.position = Vector2(400, 663)
+        accuracy_label.size = Vector2(570, 54)
+        accuracy_label.add_theme_font_size_override("font_size", 15)
 
 # Warn before the opponent has enough energy for a special attack.
 # The text as well as the color changes, so the warning is accessible on mobile.
@@ -1230,6 +1248,12 @@ func update_health_labels() -> void:
         Color("#ff737e") if hp_right <= 25 else Color("#e7f0ff"))
 
 func update_accuracy_label() -> void:
+    if get_viewport_rect().size.x < 900.0:
+        accuracy_label.text = CombatRules.compact_accuracy_caption(
+            hits_landed, attacks_attempted, combo_hits, best_combo, blocked_hits)
+        accuracy_label.add_theme_color_override("font_color",
+            Color("#ffd47d") if combo_hits > 1 else Color("#80d9ff"))
+        return
     var accuracy := 0
     if attacks_attempted > 0:
         accuracy = roundi(float(hits_landed) * 100.0 / float(attacks_attempted))

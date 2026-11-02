@@ -133,6 +133,13 @@ func _initialize() -> void:
         and is_equal_approx(Rules.player_hitstun_on_hit(0, false, true, true), 0.34)
         and is_equal_approx(Rules.player_hitstun_on_hit(1, true, true, true), 0.67)
     )
+    # Compact mobile HUD never floods the fight with full statistics.
+    assert(Rules.compact_accuracy_caption(0, 0, 0, 0, 0) == "ТОЧН. —")
+    assert(Rules.compact_accuracy_caption(3, 4, 3, 4, 2) ==
+        "ТОЧН. 75% • КОМБО x3 • БЛОК 2")
+    assert(Rules.compact_accuracy_caption(2, 2, 0, 5, 0) ==
+        "ТОЧН. 100% • РЕКОРД x5")
+    assert(Rules.compact_accuracy_caption(100, 1, 0, 0, 0) == "ТОЧН. 100%")
     # Different strike heights now have different recovery windows.
     assert(is_equal_approx(Rules.attack_cooldown_for_level(1, false), 0.52))
     assert(is_equal_approx(Rules.attack_cooldown_for_level(0, false), 0.43))
