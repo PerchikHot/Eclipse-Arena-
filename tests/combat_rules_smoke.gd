@@ -165,7 +165,7 @@ func _initialize() -> void:
     assert(Rules.result_font_size(Vector2(640, 360)) == 14)
     assert(Rules.result_font_size(Vector2(480, 800)) == 16)
     assert(Rules.result_font_size(Vector2(1280, 720)) == 19)
-    for viewport in [Vector2(120, 90), Vector2(160, 120), Vector2(200, 180), Vector2(240, 180), Vector2(300, 200), Vector2(320, 240), Vector2(640, 360), Vector2(800, 360), Vector2(360, 640), Vector2(480, 800), Vector2(1280, 720)]:
+    for viewport in [Vector2(24, 48), Vector2(60, 80), Vector2(120, 90), Vector2(160, 120), Vector2(200, 180), Vector2(240, 180), Vector2(300, 200), Vector2(320, 240), Vector2(640, 360), Vector2(800, 360), Vector2(360, 640), Vector2(480, 800), Vector2(1280, 720)]:
         var rects := Rules.result_overlay_rects(viewport)
         var panel: Rect2 = rects["panel"]
         var insets := Rules.result_content_insets(panel.size)
@@ -176,6 +176,8 @@ func _initialize() -> void:
         var restart: Rect2 = rects["restart"]
         assert(panel.position.x >= 0.0 and panel.position.y >= 0.0)
         assert(panel.end.x <= viewport.x and panel.end.y < viewport.y)
+        assert(change.size.x > 0.0 and restart.size.x > 0.0)
+        assert(change.size.y > 0.0 and restart.size.y > 0.0)
         assert(change.position.x >= 0.0 and restart.end.x <= viewport.x)
         assert(change.end.x < restart.position.x)
         assert(change.position.y >= panel.end.y)

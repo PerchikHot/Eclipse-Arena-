@@ -289,23 +289,28 @@ static func result_overlay_rects(viewport: Vector2) -> Dictionary:
     # actual viewport even when the OS resizes the game mid-round.
     var width := maxf(1.0, viewport.x)
     var height := maxf(1.0, viewport.y)
-    var panel_width := minf(720.0, maxf(1.0, width - 16.0))
-    var top := clampf(height * 0.12, 8.0, 70.0)
-    # Reserve room for BOTH actions before allocating the scrollable panel.
-    # Older 240px minimum height could place buttons below tiny landscape UI.
-    var button_height := minf(56.0, maxf(16.0, height * 0.22))
-    var panel_height := maxf(1.0, minf(438.0,
-        height - top - button_height - 20.0))
+    # In very small split-screen windows, fixed 16px side margins and
+    # 8px button gaps produced negative-width action buttons. Use a
+    # proportional safe area without changing normal phone/desktop layout.
+    var side_margin := minf(8.0, width * 0.05)
+    var panel_width := minf(720.0, width - side_margin * 2.0)
+    var top := minf(70.0, height * 0.12)
+    var button_height := minf(56.0, height * 0.22)
+    var bottom_reserve := minf(20.0, height * 0.08)
+    var button_gap_y := minf(8.0, height * 0.04)
+    var panel_height := minf(438.0,
+        maxf(0.1, height - top - button_height - bottom_reserve))
     var left := (width - panel_width) * 0.5
     var panel := Rect2(left, top, panel_width, panel_height)
-    var button_width := minf(210.0, (panel_width - 8.0) * 0.5)
-    var group_width := button_width * 2.0 + 8.0
+    var button_gap_x := minf(8.0, panel_width * 0.08)
+    var button_width := minf(210.0, (panel_width - button_gap_x) * 0.5)
+    var group_width := button_width * 2.0 + button_gap_x
     var group_left := (width - group_width) * 0.5
-    var button_y := top + panel_height + 8.0
+    var button_y := top + panel_height + button_gap_y
     return {
         "panel": panel,
         "change": Rect2(group_left, button_y, button_width, button_height),
-        "restart": Rect2(group_left + button_width + 8.0,
+        "restart": Rect2(group_left + button_width + button_gap_x,
             button_y, button_width, button_height),
     }
 
