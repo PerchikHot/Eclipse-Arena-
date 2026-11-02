@@ -1913,7 +1913,7 @@ func _process(delta: float) -> void:
     update_enemy_energy_label()
     cooldown_label.text = CombatRules.compact_combat_cue(enemy_windup,
         enemy_attack_level, guard_break_flash, parry_window,
-        attack_cooldown, dash_cooldown, combo_hits, player_hitstun)
+        attack_cooldown, dash_cooldown, combo_hits, player_hitstun, hp_left)
     update_health_labels()
     queue_redraw()
 
