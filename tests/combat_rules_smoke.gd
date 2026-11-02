@@ -139,6 +139,11 @@ func _initialize() -> void:
     assert(is_equal_approx(Rules.attack_cooldown_for_level(-1, false), 0.49))
     assert(is_equal_approx(Rules.attack_cooldown_for_level(1, true), 0.80))
     assert(Rules.attack_cooldown_for_level(0, false) < Rules.attack_cooldown_for_level(-1, false))
+    # Guard release must stop a stale blocking window in the same frame.
+    assert(is_equal_approx(Rules.active_guard_timer(true, false, 0.15), 0.15))
+    assert(Rules.active_guard_timer(false, false, 0.15) == 0.0)
+    assert(Rules.active_guard_timer(true, true, 0.15) == 0.0)
+    assert(Rules.active_guard_timer(false, false, -1.0) == 0.0)
     # Blocking now has attack-height-specific guard impact, and the touch
     # HUD previews the strike that HIT will execute at the current stick Y.
     assert(Rules.guard_impact_cost(1, false) == 24.0)
