@@ -6,6 +6,13 @@ static func gamepad_pause_requested(pressed: bool, button_index: int,
         in_menu: bool, round_over: bool) -> bool:
     return pressed and button_index == JOY_BUTTON_START and not in_menu and not round_over
 
+# The result panel is modal. A finger resting over the old joystick must
+# never arm movement behind it, and focus loss must discard new touch input.
+# Controller START is handled separately before this gate so pause can resume.
+static func combat_touch_enabled(in_menu: bool, round_over: bool,
+        paused: bool, help_visible: bool, has_focus: bool) -> bool:
+    return not (in_menu or round_over or paused or help_visible) and has_focus
+
 # Pure rules used by the 60-second defense drill on Android and Windows.
 # The player must earn the same score regardless of frame rate or UI layout.
 static func defense_challenge_score(parries: int, dodges: int) -> int:
