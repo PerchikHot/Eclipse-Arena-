@@ -66,7 +66,7 @@ jobs:
       - name: Import project
         run: godot --headless --path . --editor --quit
       - name: Run combat rules smoke tests
-        run: godot --headless --path . --script res://tests/combat_rules_smoke.gd
+        run: timeout 90s godot --headless --verbose --path . --script res://tests/combat_rules_smoke.gd
       - name: Configure Godot Android SDK paths
         run: |
           mkdir -p "$HOME/.config/godot"
