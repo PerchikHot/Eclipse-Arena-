@@ -160,7 +160,14 @@ static func joystick_center_for_viewport(viewport: Vector2) -> Vector2:
 # downwards: up selects a head strike, down selects a low strike.
 static func touch_direction(position: Vector2, center: Vector2) -> Vector2:
     var offset := (position - center) / 58.0
-    return offset.limit_length(1.0) if offset.length() >= 0.2 else Vector2.ZERO
+    var distance := offset.length()
+    # Rescale the radial dead zone instead of jumping instantly to 20% speed
+    # at its edge. This keeps short mobile thumb movements controllable and
+    # prevents diagonal movement from exceeding the same maximum speed.
+    if distance <= 0.2:
+        return Vector2.ZERO
+    var strength := clampf((distance - 0.2) / 0.8, 0.0, 1.0)
+    return offset.normalized() * strength
 
 static func attack_level(vertical_axis: float) -> int:
     if vertical_axis < -0.45:
