@@ -169,6 +169,12 @@ static func touch_direction(position: Vector2, center: Vector2) -> Vector2:
     var strength := clampf((distance - 0.2) / 0.8, 0.0, 1.0)
     return offset.normalized() * strength
 
+# The touch dead zone is already applied by touch_direction(). Do not add
+# a second 20% threshold in the main game loop: it made gentle movements
+# suddenly jump to full speed and broke fine spacing on phones.
+static func horizontal_motion(analog_x: float, keyboard_x: float) -> float:
+    return clampf(analog_x, -1.0, 1.0) if absf(analog_x) > 0.001 else clampf(keyboard_x, -1.0, 1.0)
+
 static func attack_level(vertical_axis: float) -> int:
     if vertical_axis < -0.45:
         return 1 # head
