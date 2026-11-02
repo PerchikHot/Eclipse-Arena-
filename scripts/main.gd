@@ -1929,6 +1929,14 @@ func _draw() -> void:
     draw_arc(Vector2(640, 180), 116, 0.0, TAU, 80, Color("#ff8a9d", 0.72), 4.0)
     draw_rect(Rect2(0, 610, 1280, 110), Color("#2a2544"))
     draw_line(Vector2(0, 610), Vector2(1280, 610), Color("#8e84be"), 4)
+    # Floor contact shadows ground the enlarged fighters during jumps,
+    # crouches and melee without hiding the arena or controls.
+    draw_circle(Vector2(x_left, 603), 65.0, Color("#0a1228", 0.58))
+    draw_circle(Vector2(x_right, 603), 65.0, Color("#0a1228", 0.58))
+    if round_over:
+        # Dim the busy arena behind the compact results panel; fighter sprites
+        # remain bright because they are drawn after this backdrop.
+        draw_rect(Rect2(0, 125, 1280, 485), Color("#061026", 0.32))
     if not in_menu and not round_over:
         draw_circle(joystick_center, 72.0, Color("#3b3558", 0.78))
         draw_arc(joystick_center, 72.0, 0.0, TAU, 48, Color("#aa9bcf"), 3.0)

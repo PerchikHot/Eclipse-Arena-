@@ -217,7 +217,9 @@ static func level_damage(base_damage: int, level: int) -> int:
 # Keep fighter artwork readable on 720p mobile while maintaining a
 # consistent ground contact point. Combat reach stays in world units.
 static func fighter_sprite_size(crouched: bool) -> Vector2:
-    return Vector2(232.0, 212.0 if crouched else 360.0)
+    # Larger readable character art while keeping the head below the 125px HUD.
+    # Crouching reduces height but preserves the same visual body width.
+    return Vector2(260.0, 236.0 if crouched else 400.0)
 
 
 # Fit the scrollable results panel and both actions inside a small mobile
