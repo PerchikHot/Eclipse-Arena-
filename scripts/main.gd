@@ -12,6 +12,7 @@ var attack_cooldown := 0.0
 var enemy_cooldown := 0.0
 var enemy_windup := 0.0
 var enemy_hitstun := 0.0
+var player_hitstun := 0.0
 var enemy_pending_special := false
 var left_rig := {}
 var right_rig := {}
@@ -1246,6 +1247,7 @@ func restart_round() -> void:
     enemy_cooldown = 0.0
     enemy_windup = 0.0
     enemy_hitstun = 0.0
+    player_hitstun = 0.0
     enemy_pending_special = false
     combo_hits = 0
     best_combo = 0
@@ -1635,6 +1637,7 @@ func _process(delta: float) -> void:
     dash_invulnerable = maxf(0.0, dash_invulnerable - delta)
     enemy_cooldown = maxf(0, enemy_cooldown - delta)
     enemy_hitstun = maxf(0.0, enemy_hitstun - delta)
+    player_hitstun = maxf(0.0, player_hitstun - delta)
     var left_pressed: bool = Input.is_key_pressed(KEY_A) or joystick_axis.x < -0.2
     var right_pressed: bool = Input.is_key_pressed(KEY_D) or joystick_axis.x > 0.2
     var vertical_input := joystick_axis.y
@@ -1648,7 +1651,12 @@ func _process(delta: float) -> void:
     player_motion = joystick_axis.x if absf(joystick_axis.x) > 0.2 else float(right_pressed) - float(left_pressed)
     if player_crouching:
         player_motion *= 0.45
-    var guard_requested: bool = held["BLOCK"] or Input.is_key_pressed(KEY_K)
+    # Clean AI hits briefly interrupt player movement and attacks too.
+    # Holding an input through stun does not create a free immediate jump.
+    if player_hitstun > 0.0:
+        player_motion = 0.0
+        dash_queued = false
+    var guard_requested: bool = (held["BLOCK"] or Input.is_key_pressed(KEY_K)) and player_hitstun <= 0.0
     if guard_requested and not guard_was_pressed and not guard_exhausted and parry_cooldown <= 0.0:
         parry_window = 0.20
         parry_cooldown = 0.85
@@ -1682,7 +1690,7 @@ func _process(delta: float) -> void:
             dash_invulnerable = 0.22
             play_sound("jump")
     x_left = clampf(x_left, 50, 1230)
-    var start_jump := CombatRules.should_start_jump(
+    var start_jump := player_hitstun <= 0.0 and CombatRules.should_start_jump(
         jump_pressed, jump_was_pressed, y_left >= 610.0, player_crouching)
     jump_was_pressed = jump_pressed
     if start_jump:
@@ -1746,7 +1754,7 @@ func _process(delta: float) -> void:
                 training_attack_windup = training_attack_telegraph()
     var skill_pressed: bool = held["SKILL"] or Input.is_key_pressed(KEY_L)
     var can_skill: bool = skill_pressed and skill_energy >= skill_cost
-    if (hit_pressed or can_skill) and attack_cooldown <= 0 and block_timer <= 0.0:
+    if (hit_pressed or can_skill) and player_hitstun <= 0.0 and attack_cooldown <= 0 and block_timer <= 0.0:
         player_attack_level = 0 if can_skill else CombatRules.attack_level(vertical_input)
         if can_skill:
             skill_energy -= skill_cost
@@ -1869,6 +1877,10 @@ func _process(delta: float) -> void:
                         if was_blocking:
                             enemy_damage = (10 if enemy_pending_special else 5) if guard_broken else (4 if enemy_pending_special else 2)
                         hp_left = maxi(0, hp_left - enemy_damage)
+                        if not was_blocking:
+                            player_hitstun = CombatRules.hitstun_seconds(
+                                enemy_attack_level, enemy_pending_special, false)
+                            attack_cooldown = maxf(attack_cooldown, player_hitstun)
                         damage_taken += hp_before_enemy_hit - hp_left
                         hits_received += 1
                         combo_hits = 0
@@ -1898,7 +1910,7 @@ func _process(delta: float) -> void:
     update_enemy_energy_label()
     cooldown_label.text = CombatRules.compact_combat_cue(enemy_windup,
         enemy_attack_level, guard_break_flash, parry_window,
-        attack_cooldown, dash_cooldown, combo_hits)
+        attack_cooldown, dash_cooldown, combo_hits, player_hitstun)
     update_health_labels()
     queue_redraw()
 

@@ -101,6 +101,8 @@ func _initialize() -> void:
         and Rules.level_damage(8, 1) == 11
         and Rules.level_damage(8, 0) == 8
         and Rules.level_damage(8, -1) == 6
+        and Rules.compact_combat_cue(0.0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0.25).begins_with("ОГЛУШЕНИЕ")
+        and Rules.compact_combat_cue(0.5, 1, 0.0, 0.0, 0.0, 0.0, 0, 0.0).contains("ВРАГ")
         and is_equal_approx(Rules.hitstun_seconds(1, false, false), 0.28)
         and is_equal_approx(Rules.hitstun_seconds(0, false, false), 0.22)
         and is_equal_approx(Rules.hitstun_seconds(-1, false, false), 0.18)

@@ -266,7 +266,10 @@ static func result_overlay_rects(viewport: Vector2) -> Dictionary:
 # concatenation that hides fighters and touch controls.
 static func compact_combat_cue(enemy_windup: float, enemy_level: int,
         guard_break_flash: float, parry_window: float,
-        attack_cooldown: float, dash_cooldown: float, combo_hits: int) -> String:
+        attack_cooldown: float, dash_cooldown: float, combo_hits: int,
+        player_hitstun: float = 0.0) -> String:
+    if player_hitstun > 0.0:
+        return "ОГЛУШЕНИЕ %.1fс" % player_hitstun
     if enemy_windup > 0.0:
         return "⚠ ВРАГ: " + attack_level_label(enemy_level)
     if guard_break_flash > 0.0:
