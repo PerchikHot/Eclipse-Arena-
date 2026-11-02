@@ -1664,6 +1664,14 @@ func _process(delta: float) -> void:
         gamepad_axis = CombatRules.gamepad_direction(Vector2(
             Input.get_joy_axis(gamepad_id, JOY_AXIS_LEFT_X),
             Input.get_joy_axis(gamepad_id, JOY_AXIS_LEFT_Y)))
+        # Controller D-pad works as a complete movement/attack-height input,
+        # not just as menu navigation. The analog stick takes precedence.
+        if gamepad_axis == Vector2.ZERO:
+            gamepad_axis = CombatRules.dpad_direction(
+                Input.is_joy_button_pressed(gamepad_id, JOY_BUTTON_DPAD_LEFT),
+                Input.is_joy_button_pressed(gamepad_id, JOY_BUTTON_DPAD_RIGHT),
+                Input.is_joy_button_pressed(gamepad_id, JOY_BUTTON_DPAD_UP),
+                Input.is_joy_button_pressed(gamepad_id, JOY_BUTTON_DPAD_DOWN))
     var active_axis := joystick_axis if joystick_touch >= 0 else gamepad_axis
     var left_pressed: bool = Input.is_key_pressed(KEY_A) or active_axis.x < -0.2
     var right_pressed: bool = Input.is_key_pressed(KEY_D) or active_axis.x > 0.2
