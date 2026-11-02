@@ -186,6 +186,13 @@ static func gamepad_direction(raw: Vector2) -> Vector2:
         return Vector2.ZERO
     return raw.normalized() * clampf((distance - 0.18) / 0.82, 0.0, 1.0)
 
+# Some controllers expose the directional pad as buttons instead of axes.
+# Normalize diagonal input so D-pad movement is no faster than the stick.
+# Opposing directions cancel, avoiding accidental jumps or low strikes.
+static func dpad_direction(left: bool, right: bool, up: bool, down: bool) -> Vector2:
+    var axis := Vector2(float(int(right) - int(left)), float(int(down) - int(up)))
+    return axis.normalized() if axis != Vector2.ZERO else Vector2.ZERO
+
 static func horizontal_motion(analog_x: float, keyboard_x: float) -> float:
     return clampf(analog_x, -1.0, 1.0) if absf(analog_x) > 0.001 else clampf(keyboard_x, -1.0, 1.0)
 
