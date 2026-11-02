@@ -1,5 +1,11 @@
 extends RefCounted
 
+# Gamepad START must work even while paused, otherwise a controller-only
+# player cannot resume the match. Never consume it in the main menu/results.
+static func gamepad_pause_requested(pressed: bool, button_index: int,
+        in_menu: bool, round_over: bool) -> bool:
+    return pressed and button_index == JOY_BUTTON_START and not in_menu and not round_over
+
 # Pure rules used by the 60-second defense drill on Android and Windows.
 # The player must earn the same score regardless of frame rate or UI layout.
 static func defense_challenge_score(parries: int, dodges: int) -> int:
