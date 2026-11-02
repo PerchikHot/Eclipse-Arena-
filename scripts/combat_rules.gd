@@ -203,6 +203,17 @@ static func dpad_direction(left: bool, right: bool, up: bool, down: bool) -> Vec
 static func horizontal_motion(analog_x: float, keyboard_x: float) -> float:
     return clampf(analog_x, -1.0, 1.0) if absf(analog_x) > 0.001 else clampf(keyboard_x, -1.0, 1.0)
 
+# High and low attacks have more recovery than the quick torso jab.
+# Both touch and gamepad use this same timing; specials remain slowest.
+static func attack_cooldown_for_level(level: int, special: bool) -> float:
+    if special:
+        return 0.80
+    if level > 0:
+        return 0.52
+    if level < 0:
+        return 0.49
+    return 0.43
+
 static func attack_level(vertical_axis: float) -> int:
     if vertical_axis < -0.45:
         return 1 # head
