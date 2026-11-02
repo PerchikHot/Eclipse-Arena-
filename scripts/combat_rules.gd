@@ -172,6 +172,14 @@ static func touch_direction(position: Vector2, center: Vector2) -> Vector2:
 # The touch dead zone is already applied by touch_direction(). Do not add
 # a second 20% threshold in the main game loop: it made gentle movements
 # suddenly jump to full speed and broke fine spacing on phones.
+# Gamepad stick is normalized separately from touch pixels. Keep the
+# 18% radial dead zone and a continuous speed curve on both Windows/Android.
+static func gamepad_direction(raw: Vector2) -> Vector2:
+    var distance := raw.length()
+    if distance <= 0.18:
+        return Vector2.ZERO
+    return raw.normalized() * clampf((distance - 0.18) / 0.82, 0.0, 1.0)
+
 static func horizontal_motion(analog_x: float, keyboard_x: float) -> float:
     return clampf(analog_x, -1.0, 1.0) if absf(analog_x) > 0.001 else clampf(keyboard_x, -1.0, 1.0)
 
