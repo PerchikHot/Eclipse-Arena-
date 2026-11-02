@@ -304,13 +304,16 @@ static func fighter_sprite_size(crouched: bool) -> Vector2:
 # report without losing any recorded accuracy, combo or career information.
 static func compact_result_summary(full_report: String) -> String:
     var summary := PackedStringArray()
+    var prefixes := PackedStringArray([
+        "ПОБЕДА", "ПОРАЖЕНИЕ", "НИЧЬЯ", "МАТЧ ",
+        "ПО ВРЕМЕНИ", "НОКАУТ", "ВРЕМЯ БОЯ:",
+        "HP:", "УРОН:", "✦ РЕЙТИНГ БОЯ:"
+    ])
     for line in full_report.split("\n"):
-        if line.begins_with("ПОБЕДА") or line.begins_with("ПОРАЖЕНИЕ") \
-                or line.begins_with("НИЧЬЯ") or line.begins_with("МАТЧ ") \
-                or line.begins_with("ПО ВРЕМЕНИ") or line.begins_with("НОКАУТ") \
-                or line.begins_with("ВРЕМЯ БОЯ:") or line.begins_with("HP:") \
-                or line.begins_with("УРОН:") or line.begins_with("✦ РЕЙТИНГ БОЯ:"):
-            summary.append(line)
+        for prefix in prefixes:
+            if line.begins_with(prefix):
+                summary.append(line)
+                break
     return "\n".join(summary)
 
 
