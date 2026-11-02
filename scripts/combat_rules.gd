@@ -228,6 +228,13 @@ static func attack_level_label(level: int) -> String:
         return "НОГИ"
     return "КОРПУС"
 
+# Releasing guard must immediately stop protection. Previously the last
+# 0.15-second timer survived release, creating invisible free blocks and
+# preventing a quick counterattack on touch and keyboard.
+static func active_guard_timer(requested: bool, exhausted: bool,
+        previous: float) -> float:
+    return maxf(0.0, previous) if requested and not exhausted else 0.0
+
 # Standing guard covers the head, crouching guard covers the legs. Both
 # cover the torso; attacks against the wrong guard height are unblocked.
 static func guard_covers_level(crouched: bool, level: int) -> bool:
