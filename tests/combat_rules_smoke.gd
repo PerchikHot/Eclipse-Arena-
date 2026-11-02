@@ -149,6 +149,14 @@ func _initialize() -> void:
     assert(not Rules.gamepad_pause_requested(true, JOY_BUTTON_A, false, false))
     assert(not Rules.gamepad_pause_requested(true, JOY_BUTTON_START, true, false))
     assert(not Rules.gamepad_pause_requested(true, JOY_BUTTON_START, false, true))
+    # Results, pause/help overlays and focus loss are real input barriers.
+    # The joystick must never remain active behind the victory panel.
+    assert(Rules.combat_touch_enabled(false, false, false, false, true))
+    assert(not Rules.combat_touch_enabled(true, false, false, false, true))
+    assert(not Rules.combat_touch_enabled(false, true, false, false, true))
+    assert(not Rules.combat_touch_enabled(false, false, true, false, true))
+    assert(not Rules.combat_touch_enabled(false, false, false, true, true))
+    assert(not Rules.combat_touch_enabled(false, false, false, false, false))
     # Controller movement shares the same analog combat/attack levels.
     assert(Rules.gamepad_direction(Vector2.ZERO) == Vector2.ZERO)
     assert(Rules.gamepad_direction(Vector2(0.1, 0.1)) == Vector2.ZERO)
