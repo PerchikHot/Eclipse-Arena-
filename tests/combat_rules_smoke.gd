@@ -129,6 +129,13 @@ func _initialize() -> void:
     assert(Rules.compact_combat_cue(0, 0, 0, 0, 0, 0, 0, 0, 100, -1.0) == "HIT: ГОЛОВА")
     assert(Rules.compact_combat_cue(0, 0, 0, 0, 0, 0, 0, 0, 100, 1.0) == "HIT: НОГИ")
     assert(Rules.compact_combat_cue(0.5, -1, 0, 0, 0, 0, 0, 0, 100, 1.0) == "⚠ ВРАГ: НОГИ")
+    # START pauses and resumes active fights; it must not trigger while
+    # browsing the menu or result screen, or on button release.
+    assert(Rules.gamepad_pause_requested(true, JOY_BUTTON_START, false, false))
+    assert(not Rules.gamepad_pause_requested(false, JOY_BUTTON_START, false, false))
+    assert(not Rules.gamepad_pause_requested(true, JOY_BUTTON_A, false, false))
+    assert(not Rules.gamepad_pause_requested(true, JOY_BUTTON_START, true, false))
+    assert(not Rules.gamepad_pause_requested(true, JOY_BUTTON_START, false, true))
     # Controller movement shares the same analog combat/attack levels.
     assert(Rules.gamepad_direction(Vector2.ZERO) == Vector2.ZERO)
     assert(Rules.gamepad_direction(Vector2(0.1, 0.1)) == Vector2.ZERO)
