@@ -1877,9 +1877,12 @@ func _process(delta: float) -> void:
                         if was_blocking:
                             enemy_damage = (10 if enemy_pending_special else 5) if guard_broken else (4 if enemy_pending_special else 2)
                         hp_left = maxi(0, hp_left - enemy_damage)
-                        if not was_blocking:
-                            player_hitstun = CombatRules.hitstun_seconds(
-                                enemy_attack_level, enemy_pending_special, false)
+                        # A depleted guard was broken: it must interrupt
+                        # movement and attacks just like an unguarded hit.
+                        player_hitstun = CombatRules.player_hitstun_on_hit(
+                            enemy_attack_level, enemy_pending_special,
+                            was_blocking, guard_broken)
+                        if player_hitstun > 0.0:
                             attack_cooldown = maxf(attack_cooldown, player_hitstun)
                         damage_taken += hp_before_enemy_hit - hp_left
                         hits_received += 1
