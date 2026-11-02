@@ -1647,17 +1647,28 @@ func _process(delta: float) -> void:
     enemy_cooldown = maxf(0, enemy_cooldown - delta)
     enemy_hitstun = maxf(0.0, enemy_hitstun - delta)
     player_hitstun = maxf(0.0, player_hitstun - delta)
-    var left_pressed: bool = Input.is_key_pressed(KEY_A) or joystick_axis.x < -0.2
-    var right_pressed: bool = Input.is_key_pressed(KEY_D) or joystick_axis.x > 0.2
-    var vertical_input := joystick_axis.y
+    # One connected gamepad can play the entire match. Touch retains
+    # priority while a finger owns the virtual joystick; keyboard still works.
+    var pads := Input.get_connected_joypads()
+    var gamepad_id := -1
+    var gamepad_axis := Vector2.ZERO
+    if not pads.is_empty():
+        gamepad_id = pads[0]
+        gamepad_axis = CombatRules.gamepad_direction(Vector2(
+            Input.get_joy_axis(gamepad_id, JOY_AXIS_LEFT_X),
+            Input.get_joy_axis(gamepad_id, JOY_AXIS_LEFT_Y)))
+    var active_axis := joystick_axis if joystick_touch >= 0 else gamepad_axis
+    var left_pressed: bool = Input.is_key_pressed(KEY_A) or active_axis.x < -0.2
+    var right_pressed: bool = Input.is_key_pressed(KEY_D) or active_axis.x > 0.2
+    var vertical_input := active_axis.y
     if Input.is_key_pressed(KEY_W):
         vertical_input = -1.0
     elif Input.is_key_pressed(KEY_S):
         vertical_input = 1.0
-    var jump_pressed: bool = Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_W) or joystick_axis.y < -0.55 or held["JUMP"]
-    var hit_pressed: bool = Input.is_key_pressed(KEY_J) or held["HIT"]
+    var jump_pressed: bool = Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_W) or active_axis.y < -0.55 or held["JUMP"] or (gamepad_id >= 0 and Input.is_joy_button_pressed(gamepad_id, JOY_BUTTON_A))
+    var hit_pressed: bool = Input.is_key_pressed(KEY_J) or held["HIT"] or (gamepad_id >= 0 and Input.is_joy_button_pressed(gamepad_id, JOY_BUTTON_X))
     player_crouching = vertical_input > 0.55 and y_left >= 610.0
-    player_motion = CombatRules.horizontal_motion(joystick_axis.x, float(right_pressed) - float(left_pressed))
+    player_motion = CombatRules.horizontal_motion(active_axis.x, float(right_pressed) - float(left_pressed))
     if player_crouching:
         player_motion *= 0.45
     # Clean AI hits briefly interrupt player movement and attacks too.
@@ -1665,7 +1676,7 @@ func _process(delta: float) -> void:
     if player_hitstun > 0.0:
         player_motion = 0.0
         dash_queued = false
-    var guard_requested: bool = (held["BLOCK"] or Input.is_key_pressed(KEY_K)) and player_hitstun <= 0.0
+    var guard_requested: bool = (held["BLOCK"] or Input.is_key_pressed(KEY_K) or (gamepad_id >= 0 and Input.is_joy_button_pressed(gamepad_id, JOY_BUTTON_B))) and player_hitstun <= 0.0
     if guard_requested and not guard_was_pressed and not guard_exhausted and parry_cooldown <= 0.0:
         parry_window = 0.20
         parry_cooldown = 0.85
@@ -1768,7 +1779,7 @@ func _process(delta: float) -> void:
             if training_attack_timer <= 0.0 and absf(x_left - x_right) < 195.0:
                 training_attack_level = randi_range(-1, 1)
                 training_attack_windup = training_attack_telegraph()
-    var skill_pressed: bool = held["SKILL"] or Input.is_key_pressed(KEY_L)
+    var skill_pressed: bool = held["SKILL"] or Input.is_key_pressed(KEY_L) or (gamepad_id >= 0 and Input.is_joy_button_pressed(gamepad_id, JOY_BUTTON_Y))
     var can_skill: bool = skill_pressed and skill_energy >= skill_cost
     if (hit_pressed or can_skill) and player_hitstun <= 0.0 and attack_cooldown <= 0 and block_timer <= 0.0:
         player_attack_level = 0 if can_skill else CombatRules.attack_level(vertical_input)
