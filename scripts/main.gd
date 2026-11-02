@@ -400,7 +400,7 @@ func _ready() -> void:
     result_label.add_theme_color_override("font_color", Color("#d7ebff"))
     result_scroll.add_child(result_label)
     result_details_button = Button.new()
-    result_details_button.text = "ПОДРОБНАЯ СТАТИСТИКА ▼"
+    result_details_button.text = CombatRules.result_details_caption(false, get_viewport_rect().size)
     result_details_button.custom_minimum_size = Vector2(0, 38)
     result_details_button.add_theme_font_size_override("font_size", 16)
     result_details_button.pressed.connect(toggle_result_details)
@@ -1165,10 +1165,10 @@ func toggle_result_details() -> void:
     result_details_expanded = not result_details_expanded
     if result_details_expanded:
         result_label.text = result_full_text
-        result_details_button.text = "СКРЫТЬ ПОДРОБНОСТИ ▲"
+        result_details_button.text = CombatRules.result_details_caption(true, get_viewport_rect().size)
     else:
         result_label.text = CombatRules.compact_result_summary(result_full_text)
-        result_details_button.text = "ПОДРОБНАЯ СТАТИСТИКА ▼"
+        result_details_button.text = CombatRules.result_details_caption(false, get_viewport_rect().size)
     result_scroll.scroll_vertical = 0
 
 
@@ -1198,7 +1198,7 @@ func _layout_result_overlay() -> void:
         maxf(0.0, panel_rect.size.x - float(insets.x * 2) - 12.0), 0.0)
     result_label.add_theme_font_size_override("font_size",
         CombatRules.result_font_size(get_viewport_rect().size))
-    restart_button.position = restart_rect.position
+    result_details_button.text = CombatRules.result_details_caption(\n        result_details_expanded, get_viewport_rect().size)\n    result_details_button.add_theme_font_size_override("font_size",\n        CombatRules.result_details_font_size(get_viewport_rect().size))\n    restart_button.position = restart_rect.position
     restart_button.size = restart_rect.size
     change_fighter_button.position = change_rect.position
     change_fighter_button.size = change_rect.size
@@ -1423,7 +1423,7 @@ func finish_round(outcome: int) -> void:
     result_full_text = result_label.text
     result_details_expanded = false
     result_label.text = CombatRules.compact_result_summary(result_full_text)
-    result_details_button.text = "ПОДРОБНАЯ СТАТИСТИКА ▼"
+    result_details_button.text = CombatRules.result_details_caption(false, get_viewport_rect().size)
     # Each new result starts at its headline, not at the scroll offset
     # left behind by the previous match.
     result_scroll.scroll_vertical = 0
