@@ -278,7 +278,7 @@ static func result_overlay_rects(viewport: Vector2) -> Dictionary:
 static func compact_combat_cue(enemy_windup: float, enemy_level: int,
         guard_break_flash: float, parry_window: float,
         attack_cooldown: float, dash_cooldown: float, combo_hits: int,
-        player_hitstun: float = 0.0) -> String:
+        player_hitstun: float = 0.0, player_hp: int = 100) -> String:
     if player_hitstun > 0.0:
         return "ОГЛУШЕНИЕ %.1fс" % player_hitstun
     if enemy_windup > 0.0:
@@ -291,6 +291,10 @@ static func compact_combat_cue(enemy_windup: float, enemy_level: int,
         return "УДАР %.1fс" % attack_cooldown
     if dash_cooldown > 0.0:
         return "РЫВОК %.1fс" % dash_cooldown
+    # A persistent low-health warning is more useful than combo text on a
+    # small touch HUD. Immediate threats (stun/windup/guard break) still win.
+    if player_hp <= 25:
+        return "⚠ КРИТИЧЕСКОЕ HP"
     if combo_hits > 1:
         return "КОМБО %d" % combo_hits
     return "ГОТОВО К БОЮ"
