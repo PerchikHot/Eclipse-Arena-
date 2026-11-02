@@ -129,6 +129,12 @@ func _initialize() -> void:
     assert(Rules.compact_combat_cue(0, 0, 0, 0, 0, 0, 0, 0, 100, -1.0) == "HIT: ГОЛОВА")
     assert(Rules.compact_combat_cue(0, 0, 0, 0, 0, 0, 0, 0, 100, 1.0) == "HIT: НОГИ")
     assert(Rules.compact_combat_cue(0.5, -1, 0, 0, 0, 0, 0, 0, 100, 1.0) == "⚠ ВРАГ: НОГИ")
+    # Gentle thumb motion must reach the fighter after the radial dead zone.
+    assert(is_equal_approx(Rules.horizontal_motion(0.08, 0.0), 0.08))
+    assert(is_equal_approx(Rules.horizontal_motion(-0.12, 1.0), -0.12))
+    assert(Rules.horizontal_motion(0.0, 1.0) == 1.0)
+    assert(Rules.horizontal_motion(0.0005, -1.0) == -1.0)
+    assert(Rules.horizontal_motion(3.0, 0.0) == 1.0)
     # A radial dead zone prevents jitter; the remaining stick travel maps
     # continuously to speed, including diagonals on small touchscreens.
     var touch_center := Vector2(112, 643)
