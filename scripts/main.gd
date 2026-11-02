@@ -1835,7 +1835,7 @@ func _process(delta: float) -> void:
         player_attack_level = 0 if can_skill else CombatRules.attack_level(vertical_input)
         if can_skill:
             skill_energy -= skill_cost
-        attack_cooldown = 0.8 if can_skill else 0.43
+        attack_cooldown = CombatRules.attack_cooldown_for_level(player_attack_level, can_skill)
         attacks_attempted += 1
         update_accuracy_label()
         player_attack_fx = 0.18
