@@ -98,6 +98,13 @@ func _initialize() -> void:
         and not Rules.attack_connects(1, true, false)
         and not Rules.attack_connects(-1, false, true)
         and Rules.attack_connects(0, true, false)
+        and Rules.training_defense_outcome(1, true, false, false, false, false) == "dodge"
+        and Rules.training_defense_outcome(-1, false, true, false, false, false) == "dodge"
+        and Rules.training_defense_outcome(0, false, false, true, false, false) == "dodge"
+        and Rules.training_defense_outcome(1, false, false, false, true, true) == "parry"
+        and Rules.training_defense_outcome(-1, true, false, false, true, false) == "block"
+        and Rules.training_defense_outcome(-1, false, false, false, true, true) == "hit"
+        and Rules.training_defense_outcome(1, true, false, false, true, true) == "dodge"
         and Rules.level_damage(8, 1) == 11
         and Rules.level_damage(8, 0) == 8
         and Rules.level_damage(8, -1) == 6
