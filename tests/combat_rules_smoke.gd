@@ -129,6 +129,14 @@ func _initialize() -> void:
     assert(Rules.compact_combat_cue(0, 0, 0, 0, 0, 0, 0, 0, 100, -1.0) == "HIT: ГОЛОВА")
     assert(Rules.compact_combat_cue(0, 0, 0, 0, 0, 0, 0, 0, 100, 1.0) == "HIT: НОГИ")
     assert(Rules.compact_combat_cue(0.5, -1, 0, 0, 0, 0, 0, 0, 100, 1.0) == "⚠ ВРАГ: НОГИ")
+    # Controller movement shares the same analog combat/attack levels.
+    assert(Rules.gamepad_direction(Vector2.ZERO) == Vector2.ZERO)
+    assert(Rules.gamepad_direction(Vector2(0.1, 0.1)) == Vector2.ZERO)
+    assert(Rules.gamepad_direction(Vector2(1.0, 0.0)) == Vector2.RIGHT)
+    assert(Rules.gamepad_direction(Vector2(0.0, -1.0)) == Vector2.UP)
+    assert(Rules.gamepad_direction(Vector2(0.0, 1.0)) == Vector2.DOWN)
+    assert(Rules.gamepad_direction(Vector2(0.5, 0.0)).x > 0.3)
+    assert(Rules.gamepad_direction(Vector2(1.0, 1.0)).length() <= 1.0)
     # Gentle thumb motion must reach the fighter after the radial dead zone.
     assert(is_equal_approx(Rules.horizontal_motion(0.08, 0.0), 0.08))
     assert(is_equal_approx(Rules.horizontal_motion(-0.12, 1.0), -0.12))
