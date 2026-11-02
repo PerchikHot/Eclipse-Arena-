@@ -339,6 +339,16 @@ static func result_font_size(viewport: Vector2) -> int:
         return 16
     return 19
 
+# Keep the result disclosure control readable on narrow Android screens.
+# The full label remains on desktop; resizing never changes expanded state.
+static func result_details_caption(expanded: bool, viewport: Vector2) -> String:
+    if viewport.x < 420.0:
+        return "СКРЫТЬ ▲" if expanded else "СТАТИСТИКА ▼"
+    return "СКРЫТЬ ПОДРОБНОСТИ ▲" if expanded else "ПОДРОБНАЯ СТАТИСТИКА ▼"
+
+static func result_details_font_size(viewport: Vector2) -> int:
+    return 12 if viewport.x < 420.0 else (14 if viewport.x < 650.0 else 16)
+
 static func result_overlay_rects(viewport: Vector2) -> Dictionary:
     # Portrait/split-screen devices need two full-width actions below the
     # scrollable results card. Tiny side-by-side buttons clipped their text.
