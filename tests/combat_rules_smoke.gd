@@ -84,6 +84,14 @@ func _initialize() -> void:
         and not Rules.should_start_jump(true, false, false, false)
         and not Rules.should_start_jump(true, false, true, true)
         and not Rules.should_start_jump(false, false, true, false)
+        and Rules.dpad_direction(false, false, false, false) == Vector2.ZERO
+        and Rules.dpad_direction(true, false, false, false) == Vector2.LEFT
+        and Rules.dpad_direction(false, true, false, false) == Vector2.RIGHT
+        and Rules.dpad_direction(false, false, true, false) == Vector2.UP
+        and Rules.dpad_direction(false, false, false, true) == Vector2.DOWN
+        and Rules.dpad_direction(true, true, false, false) == Vector2.ZERO
+        and Rules.dpad_direction(false, true, true, false).length() <= 1.0
+        and Rules.attack_level(Rules.dpad_direction(false, true, true, false).y) == 1
         and Rules.attack_level(-1.0) == 1
         and Rules.attack_level(0.0) == 0
         and Rules.attack_level(1.0) == -1
