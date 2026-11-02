@@ -1198,7 +1198,11 @@ func _layout_result_overlay() -> void:
         maxf(0.0, panel_rect.size.x - float(insets.x * 2) - 12.0), 0.0)
     result_label.add_theme_font_size_override("font_size",
         CombatRules.result_font_size(get_viewport_rect().size))
-    result_details_button.text = CombatRules.result_details_caption(\n        result_details_expanded, get_viewport_rect().size)\n    result_details_button.add_theme_font_size_override("font_size",\n        CombatRules.result_details_font_size(get_viewport_rect().size))\n    restart_button.position = restart_rect.position
+    result_details_button.text = CombatRules.result_details_caption(
+        result_details_expanded, get_viewport_rect().size)
+    result_details_button.add_theme_font_size_override("font_size",
+        CombatRules.result_details_font_size(get_viewport_rect().size))
+    restart_button.position = restart_rect.position
     restart_button.size = restart_rect.size
     change_fighter_button.position = change_rect.position
     change_fighter_button.size = change_rect.size
