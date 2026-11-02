@@ -122,12 +122,12 @@ func _initialize() -> void:
     )
     # A radial dead zone prevents jitter; the remaining stick travel maps
     # continuously to speed, including diagonals on small touchscreens.
-    var center := Vector2(112, 643)
-    assert(Rules.touch_direction(center + Vector2(10, 0), center) == Vector2.ZERO)
-    var halfway := Rules.touch_direction(center + Vector2(29, 0), center)
+    var touch_center := Vector2(112, 643)
+    assert(Rules.touch_direction(touch_center + Vector2(10, 0), touch_center) == Vector2.ZERO)
+    var halfway := Rules.touch_direction(touch_center + Vector2(29, 0), touch_center)
     assert(halfway.x > 0.35 and halfway.x < 0.4)
     assert(is_zero_approx(halfway.y))
-    var diagonal := Rules.touch_direction(center + Vector2(58, 58), center)
+    var diagonal := Rules.touch_direction(touch_center + Vector2(58, 58), touch_center)
     assert(is_equal_approx(diagonal.length(), 1.0))
     assert(diagonal.x > 0.7 and diagonal.y > 0.7)
     # A mobile HUD shows one urgent cue instead of overlapping long text.
