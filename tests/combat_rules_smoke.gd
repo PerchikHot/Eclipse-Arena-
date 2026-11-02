@@ -120,6 +120,15 @@ func _initialize() -> void:
         and is_equal_approx(Rules.player_hitstun_on_hit(0, false, true, true), 0.34)
         and is_equal_approx(Rules.player_hitstun_on_hit(1, true, true, true), 0.67)
     )
+    # Blocking now has attack-height-specific guard impact, and the touch
+    # HUD previews the strike that HIT will execute at the current stick Y.
+    assert(Rules.guard_impact_cost(1, false) == 24.0)
+    assert(Rules.guard_impact_cost(0, false) == 18.0)
+    assert(Rules.guard_impact_cost(-1, false) == 20.0)
+    assert(Rules.guard_impact_cost(1, true) == 48.0)
+    assert(Rules.compact_combat_cue(0, 0, 0, 0, 0, 0, 0, 0, 100, -1.0) == "HIT: ГОЛОВА")
+    assert(Rules.compact_combat_cue(0, 0, 0, 0, 0, 0, 0, 0, 100, 1.0) == "HIT: НОГИ")
+    assert(Rules.compact_combat_cue(0.5, -1, 0, 0, 0, 0, 0, 0, 100, 1.0) == "⚠ ВРАГ: НОГИ")
     # A radial dead zone prevents jitter; the remaining stick travel maps
     # continuously to speed, including diagonals on small touchscreens.
     var touch_center := Vector2(112, 643)

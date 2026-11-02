@@ -1881,7 +1881,8 @@ func _process(delta: float) -> void:
                             blocked_hits += 1
                             # Blocking a real hit costs additional stamina. A
                             # special attack is much harder to absorb than a jab.
-                            guard_stamina = maxf(0.0, guard_stamina - (42.0 if enemy_pending_special else 18.0))
+                            guard_stamina = maxf(0.0, guard_stamina -
+                                CombatRules.guard_impact_cost(enemy_attack_level, enemy_pending_special))
                             if guard_stamina <= 0.0:
                                 guard_exhausted = true
                                 guard_broken = true
@@ -1929,7 +1930,8 @@ func _process(delta: float) -> void:
     update_enemy_energy_label()
     cooldown_label.text = CombatRules.compact_combat_cue(enemy_windup,
         enemy_attack_level, guard_break_flash, parry_window,
-        attack_cooldown, dash_cooldown, combo_hits, player_hitstun, hp_left)
+        attack_cooldown, dash_cooldown, combo_hits, player_hitstun, hp_left,
+        vertical_input)
     update_health_labels()
     queue_redraw()
 

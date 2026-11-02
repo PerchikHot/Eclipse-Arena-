@@ -237,6 +237,12 @@ static func player_hitstun_on_hit(level: int, special: bool,
     var duration := hitstun_seconds(level, special, false)
     return duration + 0.12 if guard_broken else duration
 
+# A blocked head strike puts more pressure on the guard than a body jab.
+# Both the player's HUD and AI use this deterministic stamina cost.
+static func guard_impact_cost(level: int, special: bool) -> float:
+    var base := 42.0 if special else 18.0
+    return base + (6.0 if level > 0 else 2.0 if level < 0 else 0.0)
+
 static func level_damage(base_damage: int, level: int) -> int:
     if level > 0:
         return maxi(1, base_damage + 3)
@@ -309,7 +315,8 @@ static func result_overlay_rects(viewport: Vector2) -> Dictionary:
 static func compact_combat_cue(enemy_windup: float, enemy_level: int,
         guard_break_flash: float, parry_window: float,
         attack_cooldown: float, dash_cooldown: float, combo_hits: int,
-        player_hitstun: float = 0.0, player_hp: int = 100) -> String:
+        player_hitstun: float = 0.0, player_hp: int = 100,
+        vertical_input: float = 0.0) -> String:
     if player_hitstun > 0.0:
         return "ОГЛУШЕНИЕ %.1fс" % player_hitstun
     if enemy_windup > 0.0:
@@ -328,4 +335,10 @@ static func compact_combat_cue(enemy_windup: float, enemy_level: int,
         return "⚠ КРИТИЧЕСКОЕ HP"
     if combo_hits > 1:
         return "КОМБО %d" % combo_hits
+    # Preview the actual HIT height before the button is pressed.
+    # A high/low cue is only shown when no urgent combat warning is active.
+    if vertical_input < -0.55:
+        return "HIT: ГОЛОВА"
+    if vertical_input > 0.55:
+        return "HIT: НОГИ"
     return "ГОТОВО К БОЮ"
