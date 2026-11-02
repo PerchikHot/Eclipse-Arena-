@@ -1717,7 +1717,7 @@ func _process(delta: float) -> void:
         Input.is_key_pressed(KEY_W) or active_axis.y < -0.55, hit_pressed,
         Input.is_key_pressed(KEY_SPACE) or held["JUMP"] or
         (gamepad_id >= 0 and Input.is_joy_button_pressed(gamepad_id, JOY_BUTTON_A)))
-    player_crouching = vertical_input > 0.55 and y_left >= 610.0
+    player_crouching = vertical_input > 0.55 and y_left >= 610.0 and player_hitstun <= 0.0
     player_motion = CombatRules.horizontal_motion(active_axis.x, float(right_pressed) - float(left_pressed))
     if player_crouching:
         player_motion *= 0.45
@@ -1747,6 +1747,8 @@ func _process(delta: float) -> void:
             guard_exhausted = false
     else:
         block_timer = 0.0
+    block_timer = CombatRules.active_guard_timer(
+        guard_requested, guard_exhausted, block_timer)
     x_left += player_motion * 330 * delta
     if dash_queued:
         dash_queued = false
