@@ -215,6 +215,13 @@ static func attack_level_label(level: int) -> String:
 static func guard_covers_level(crouched: bool, level: int) -> bool:
     return level <= 0 if crouched else level >= 0
 
+# Direction + HIT selects a head strike without forcing a jump. An
+# explicit jump button (SPACE / touch JUMP / gamepad A) always wins, even
+# while attacking. This avoids accidental aerial moves on small joysticks.
+static func directional_jump_requested(up: bool, attacking: bool,
+        explicit_jump: bool) -> bool:
+    return explicit_jump or (up and not attacking)
+
 # Holding up selects a head strike as well as jump. Jump only on the
 # rising edge; holding up through landing must not cause repeated hops.
 static func should_start_jump(pressed: bool, was_pressed: bool,
