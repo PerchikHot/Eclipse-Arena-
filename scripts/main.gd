@@ -1578,7 +1578,8 @@ func _input(event: InputEvent) -> void:
         toggle_pause()
         get_viewport().set_input_as_handled()
         return
-    if in_menu or manual_paused or controls_help_label.visible:
+    if not CombatRules.combat_touch_enabled(in_menu, round_over,
+            manual_paused, controls_help_label.visible, has_game_focus):
         return
     if event is InputEventScreenTouch:
         if event.pressed and event.position.distance_to(joystick_center) < 105.0 and joystick_touch == -1:
