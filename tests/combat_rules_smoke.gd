@@ -195,14 +195,14 @@ func _initialize() -> void:
     assert(Rules.fighter_sprite_size(false).y > Rules.fighter_sprite_size(true).y)
     # Compact mobile result preserves the outcome and essential combat data;
     # detailed accuracy/career numbers are accessible only after expansion.
-    var report := "МАТЧ ВЫИГРАН!\\nПОБЕДА!\\nНОКАУТ\\nВРЕМЯ БОЯ: 38 / 60 сек\\nHP: 42 / 0\\nУРОН: 100 нанесено / 58 получено\\nПОПАДАНИЯ: 9 / 4\\nТОЧНОСТЬ: 90%\\n✦ РЕЙТИНГ БОЯ: A • 82/100\\nКАРЬЕРА: 3 побед"
+    var report := "МАТЧ ВЫИГРАН!\nПОБЕДА!\nНОКАУТ\nВРЕМЯ БОЯ: 38 / 60 сек\nHP: 42 / 0\nУРОН: 100 нанесено / 58 получено\nПОПАДАНИЯ: 9 / 4\nТОЧНОСТЬ: 90%\n✦ РЕЙТИНГ БОЯ: A • 82/100\nКАРЬЕРА: 3 побед"
     var compact := Rules.compact_result_summary(report)
-    assert(compact.begins_with("МАТЧ ВЫИГРАН!\\nПОБЕДА!"))
+    assert(compact.begins_with("МАТЧ ВЫИГРАН!\nПОБЕДА!"))
     assert(compact.contains("HP: 42 / 0"))
     assert(compact.contains("РЕЙТИНГ БОЯ: A"))
     assert(not compact.contains("ПОПАДАНИЯ:"))
     assert(not compact.contains("КАРЬЕРА:"))
-    assert(compact.split("\\n").size() <= 7)
+    assert(compact.split("\n").size() <= 7)
     assert(Rules.result_font_size(Vector2(120, 90)) == 11)
     assert(Rules.result_font_size(Vector2(160, 120)) == 11)
     assert(Rules.result_font_size(Vector2(320, 240)) == 14)
