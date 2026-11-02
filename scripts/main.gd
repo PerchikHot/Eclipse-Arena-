@@ -110,6 +110,7 @@ var combo_timer := 0.0
 var block_timer := 0.0
 # Guard cannot be held indefinitely: it must recover after exhaustion.
 var guard_stamina := 100.0
+var guard_recovery_delay := 0.0
 var guard_exhausted := false
 # A timed evasive dash uses guard stamina; it cannot be spammed while held.
 var dash_cooldown := 0.0
@@ -1332,6 +1333,7 @@ func restart_round() -> void:
     combo_timer = 0.0
     block_timer = 0.0
     guard_stamina = 100.0
+    guard_recovery_delay = 0.0
     guard_exhausted = false
     guard_status_label.text = CombatRules.guard_readiness_label(guard_stamina, false)
     dash_cooldown = 0.0
@@ -1761,6 +1763,7 @@ func _process(delta: float) -> void:
     if not guard_requested:
         parry_window = 0.0
     guard_was_pressed = guard_requested
+    guard_recovery_delay = maxf(0.0, guard_recovery_delay - delta)
     if guard_requested and not guard_exhausted:
         guard_stamina = maxf(0.0, guard_stamina - 24.0 * delta)
         if guard_stamina <= 0.0:
@@ -1770,7 +1773,8 @@ func _process(delta: float) -> void:
             block_timer = 0.15
             player_motion *= 0.35
     elif not guard_requested:
-        guard_stamina = minf(100.0, guard_stamina + 20.0 * delta)
+        guard_stamina = minf(100.0, guard_stamina +
+            CombatRules.guard_regen_per_second(guard_recovery_delay, guard_exhausted) * delta)
         if guard_exhausted and guard_stamina >= 35.0:
             guard_exhausted = false
     else:
@@ -1837,6 +1841,7 @@ func _process(delta: float) -> void:
                         parry_window = 0.0
                         successful_parries += 1
                         guard_stamina = maxf(0.0, guard_stamina - 12.0)
+                        guard_recovery_delay = maxf(guard_recovery_delay, 0.30)
                         skill_energy = minf(100.0, skill_energy + 15.0)
                         training_attack_label.text = "ПАРИРОВАНО: %d" % successful_parries
                         play_sound("menu")
@@ -1974,6 +1979,7 @@ func _process(delta: float) -> void:
                             # special attack is much harder to absorb than a jab.
                             guard_stamina = maxf(0.0, guard_stamina -
                                 CombatRules.guard_impact_cost(enemy_attack_level, enemy_pending_special))
+                            guard_recovery_delay = maxf(guard_recovery_delay, 0.65)
                             if guard_stamina <= 0.0:
                                 guard_exhausted = true
                                 guard_broken = true
