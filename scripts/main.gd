@@ -1680,8 +1680,11 @@ func _process(delta: float) -> void:
         vertical_input = -1.0
     elif Input.is_key_pressed(KEY_S):
         vertical_input = 1.0
-    var jump_pressed: bool = Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_W) or active_axis.y < -0.55 or held["JUMP"] or (gamepad_id >= 0 and Input.is_joy_button_pressed(gamepad_id, JOY_BUTTON_A))
     var hit_pressed: bool = Input.is_key_pressed(KEY_J) or held["HIT"] or (gamepad_id >= 0 and Input.is_joy_button_pressed(gamepad_id, JOY_BUTTON_X))
+    var jump_pressed: bool = CombatRules.directional_jump_requested(
+        Input.is_key_pressed(KEY_W) or active_axis.y < -0.55, hit_pressed,
+        Input.is_key_pressed(KEY_SPACE) or held["JUMP"] or
+        (gamepad_id >= 0 and Input.is_joy_button_pressed(gamepad_id, JOY_BUTTON_A)))
     player_crouching = vertical_input > 0.55 and y_left >= 610.0
     player_motion = CombatRules.horizontal_motion(active_axis.x, float(right_pressed) - float(left_pressed))
     if player_crouching:
