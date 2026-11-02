@@ -34,6 +34,7 @@ jobs:
           set -euo pipefail
           godot --headless --path . --editor --quit
           timeout 90s godot --headless --verbose --path . --script res://tests/combat_rules_smoke.gd
+          timeout 90s godot --headless --path . --script res://tests/main_scene_smoke.gd
           mkdir -p build
           godot --headless --path . --export-release "Windows Desktop" build/EclipseArena.exe
           test -s build/EclipseArena.exe
