@@ -197,6 +197,15 @@ static func hitstun_seconds(level: int, special: bool, blocked: bool) -> float:
         return 0.18
     return 0.22
 
+# Breaking a depleted guard is a real opening, not a free block.
+# A clean block has no stun; a guard break briefly interrupts the defender.
+static func player_hitstun_on_hit(level: int, special: bool,
+        blocked: bool, guard_broken: bool) -> float:
+    if blocked and not guard_broken:
+        return 0.0
+    var duration := hitstun_seconds(level, special, false)
+    return duration + 0.12 if guard_broken else duration
+
 static func level_damage(base_damage: int, level: int) -> int:
     if level > 0:
         return maxi(1, base_damage + 3)
