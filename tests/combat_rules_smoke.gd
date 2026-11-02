@@ -217,6 +217,12 @@ func _initialize() -> void:
     assert(Rules.result_font_size(Vector2(640, 360)) == 14)
     assert(Rules.result_font_size(Vector2(480, 800)) == 16)
     assert(Rules.result_font_size(Vector2(1280, 720)) == 19)
+    assert(Rules.result_details_caption(false, Vector2(320, 640)) == "СТАТИСТИКА ▼")
+    assert(Rules.result_details_caption(true, Vector2(320, 640)) == "СКРЫТЬ ▲")
+    assert(Rules.result_details_caption(false, Vector2(1280, 720)) == "ПОДРОБНАЯ СТАТИСТИКА ▼")
+    assert(Rules.result_details_font_size(Vector2(320, 640)) == 12)
+    assert(Rules.result_details_font_size(Vector2(480, 800)) == 14)
+    assert(Rules.result_details_font_size(Vector2(1280, 720)) == 16)
     for viewport in [Vector2(24, 48), Vector2(60, 80), Vector2(120, 90), Vector2(160, 120), Vector2(200, 180), Vector2(240, 180), Vector2(300, 200), Vector2(320, 240), Vector2(640, 360), Vector2(800, 360), Vector2(360, 640), Vector2(480, 800), Vector2(1280, 720)]:
         var rects := Rules.result_overlay_rects(viewport)
         var panel: Rect2 = rects["panel"]
