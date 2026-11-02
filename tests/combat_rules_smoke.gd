@@ -133,6 +133,12 @@ func _initialize() -> void:
         and is_equal_approx(Rules.player_hitstun_on_hit(0, false, true, true), 0.34)
         and is_equal_approx(Rules.player_hitstun_on_hit(1, true, true, true), 0.67)
     )
+    # Different strike heights now have different recovery windows.
+    assert(is_equal_approx(Rules.attack_cooldown_for_level(1, false), 0.52))
+    assert(is_equal_approx(Rules.attack_cooldown_for_level(0, false), 0.43))
+    assert(is_equal_approx(Rules.attack_cooldown_for_level(-1, false), 0.49))
+    assert(is_equal_approx(Rules.attack_cooldown_for_level(1, true), 0.80))
+    assert(Rules.attack_cooldown_for_level(0, false) < Rules.attack_cooldown_for_level(-1, false))
     # Blocking now has attack-height-specific guard impact, and the touch
     # HUD previews the strike that HIT will execute at the current stick Y.
     assert(Rules.guard_impact_cost(1, false) == 24.0)
