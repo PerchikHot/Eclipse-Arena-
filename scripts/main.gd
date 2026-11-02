@@ -27,6 +27,9 @@ var result_label: Label
 var result_panel: PanelContainer
 var result_margin: MarginContainer
 var result_scroll: ScrollContainer
+var result_details_button: Button
+var result_full_text := ""
+var result_details_expanded := false
 var restart_button: Button
 var change_fighter_button: Button
 var player_attack_fx := 0.0
@@ -383,16 +386,25 @@ func _ready() -> void:
     result_margin.add_theme_constant_override("margin_top", 18)
     result_margin.add_theme_constant_override("margin_bottom", 18)
     result_panel.add_child(result_margin)
+    var result_stack := VBoxContainer.new()
+    result_stack.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    result_margin.add_child(result_stack)
     result_scroll = ScrollContainer.new()
     result_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
     result_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-    result_margin.add_child(result_scroll)
+    result_stack.add_child(result_scroll)
     result_label = Label.new()
     result_label.custom_minimum_size = Vector2.ZERO
     result_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     result_label.add_theme_font_size_override("font_size", 19)
     result_label.add_theme_color_override("font_color", Color("#d7ebff"))
     result_scroll.add_child(result_label)
+    result_details_button = Button.new()
+    result_details_button.text = "ПОДРОБНАЯ СТАТИСТИКА ▼"
+    result_details_button.custom_minimum_size = Vector2(0, 38)
+    result_details_button.add_theme_font_size_override("font_size", 16)
+    result_details_button.pressed.connect(toggle_result_details)
+    result_stack.add_child(result_details_button)
     restart_button = Button.new()
     restart_button.text = "ЗАНОВО" if OS.has_feature("mobile") else "ЗАНОВО (R)"
     restart_button.position = Vector2(740, 625)
@@ -1147,6 +1159,17 @@ func start_game() -> void:
     result_panel.visible = round_over
     update_health_labels()
 
+func toggle_result_details() -> void:
+    if not round_over or result_full_text.is_empty():
+        return
+    result_details_expanded = not result_details_expanded
+    result_label.text = result_full_text if result_details_expanded else \
+        CombatRules.compact_result_summary(result_full_text)
+    result_details_button.text = ("СКРЫТЬ ПОДРОБНОСТИ ▲" if result_details_expanded
+        else "ПОДРОБНАЯ СТАТИСТИКА ▼")
+    result_scroll.scroll_vertical = 0
+
+
 func _layout_result_overlay() -> void:
     if result_panel == null or result_label == null or restart_button == null or change_fighter_button == null:
         return
@@ -1393,6 +1416,12 @@ func finish_round(outcome: int) -> void:
         restart_button.text = "НОВЫЙ МАТЧ" if OS.has_feature("mobile") else "НОВЫЙ МАТЧ (R)"
     else:
         restart_button.text = "СЛЕД. РАУНД" if OS.has_feature("mobile") else "СЛЕД. РАУНД (R)"
+    # Keep the first mobile result readable: show the headline, remaining HP,
+    # damage and rank. Full stats remain available through the panel button.
+    result_full_text = result_label.text
+    result_details_expanded = false
+    result_label.text = CombatRules.compact_result_summary(result_full_text)
+    result_details_button.text = "ПОДРОБНАЯ СТАТИСТИКА ▼"
     # Each new result starts at its headline, not at the scroll offset
     # left behind by the previous match.
     result_scroll.scroll_vertical = 0
