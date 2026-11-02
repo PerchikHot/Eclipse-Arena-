@@ -1657,7 +1657,7 @@ func _process(delta: float) -> void:
     var jump_pressed: bool = Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_W) or joystick_axis.y < -0.55 or held["JUMP"]
     var hit_pressed: bool = Input.is_key_pressed(KEY_J) or held["HIT"]
     player_crouching = vertical_input > 0.55 and y_left >= 610.0
-    player_motion = joystick_axis.x if absf(joystick_axis.x) > 0.2 else float(right_pressed) - float(left_pressed)
+    player_motion = CombatRules.horizontal_motion(joystick_axis.x, float(right_pressed) - float(left_pressed))
     if player_crouching:
         player_motion *= 0.45
     # Clean AI hits briefly interrupt player movement and attacks too.
