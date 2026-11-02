@@ -1163,10 +1163,12 @@ func toggle_result_details() -> void:
     if not round_over or result_full_text.is_empty():
         return
     result_details_expanded = not result_details_expanded
-    result_label.text = result_full_text if result_details_expanded else \
-        CombatRules.compact_result_summary(result_full_text)
-    result_details_button.text = ("СКРЫТЬ ПОДРОБНОСТИ ▲" if result_details_expanded
-        else "ПОДРОБНАЯ СТАТИСТИКА ▼")
+    if result_details_expanded:
+        result_label.text = result_full_text
+        result_details_button.text = "СКРЫТЬ ПОДРОБНОСТИ ▲"
+    else:
+        result_label.text = CombatRules.compact_result_summary(result_full_text)
+        result_details_button.text = "ПОДРОБНАЯ СТАТИСТИКА ▼"
     result_scroll.scroll_vertical = 0
 
 
