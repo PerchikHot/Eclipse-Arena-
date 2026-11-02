@@ -145,6 +145,7 @@ var training_attack_pace := 1 # 0 slow, 1 normal, 2 fast
 var training_pace_button: Button
 var training_attack_timer := 2.0
 var training_attack_windup := 0.0
+var training_attack_level := 0 # head/torso/legs, telegraphed before each strike
 var training_range_label: Label
 var training_target_guarding := false
 var training_guarded_hits := 0
@@ -1724,19 +1725,24 @@ func _process(delta: float) -> void:
     if training_mode and training_attack_enabled:
         if training_attack_windup > 0.0:
             training_attack_windup = maxf(0.0, training_attack_windup - delta)
-            training_attack_label.text = "ЗАМАХ: %.1f с" % training_attack_windup
+            training_attack_label.text = "ЗАМАХ: %s %.1fс" % [CombatRules.attack_level_label(training_attack_level), training_attack_windup]
             if training_attack_windup <= 0.0:
                 enemy_attack_fx = 0.3
                 training_attack_timer = training_attack_interval()
                 training_attack_label.text = "УДАР МИШЕНИ"
                 if absf(x_left - x_right) < 150.0 and absf(y_left - 610.0) < 120.0:
                     training_attack_attempts += 1
-                    var defended := dash_invulnerable > 0.0 or (
-                        block_timer > 0.0 and parry_window > 0.0)
-                    if dash_invulnerable > 0.0:
+                    var outcome := CombatRules.training_defense_outcome(
+                        training_attack_level, player_crouching,
+                        y_left < 580.0, dash_invulnerable > 0.0,
+                        block_timer > 0.0, parry_window > 0.0)
+                    var defended := outcome == "dodge" or outcome == "parry"
+                    if outcome == "dodge":
                         training_dodges += 1
-                        training_attack_label.text = "УКЛОНЕНИЕ: %d" % training_dodges
-                    elif block_timer > 0.0 and parry_window > 0.0:
+                        training_attack_label.text = "УКЛОНЕНИЕ ОТ %s: %d" % [
+                            CombatRules.attack_level_label(training_attack_level),
+                            training_dodges]
+                    elif outcome == "parry":
                         parry_window = 0.0
                         successful_parries += 1
                         guard_stamina = maxf(0.0, guard_stamina - 12.0)
@@ -1744,11 +1750,12 @@ func _process(delta: float) -> void:
                         training_attack_label.text = "ПАРИРОВАНО: %d" % successful_parries
                         play_sound("menu")
                     else:
-                        var damage := 2 if block_timer > 0.0 else 6
+                        var damage := 2 if outcome == "block" else 6
                         hp_left = maxi(1, hp_left - damage)
                         damage_taken += damage
                         hits_received += 1
                         player_hit_fx = 0.2
+                        training_attack_label.text = ("БЛОК: " if outcome == "block" else "ПОПАДАНИЕ: ") + CombatRules.attack_level_label(training_attack_level)
                         play_sound("hit")
                         update_health_labels()
                     training_defense_streak = CombatRules.next_defense_streak(
@@ -1759,6 +1766,7 @@ func _process(delta: float) -> void:
             training_attack_timer -= delta
             training_attack_label.text = "АТАКА ЧЕРЕЗ: %.1f с" % maxf(0.0, training_attack_timer)
             if training_attack_timer <= 0.0 and absf(x_left - x_right) < 195.0:
+                training_attack_level = randi_range(-1, 1)
                 training_attack_windup = training_attack_telegraph()
     var skill_pressed: bool = held["SKILL"] or Input.is_key_pressed(KEY_L)
     var can_skill: bool = skill_pressed and skill_energy >= skill_cost
