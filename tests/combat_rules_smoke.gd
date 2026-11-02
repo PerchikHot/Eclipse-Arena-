@@ -141,6 +141,10 @@ func _initialize() -> void:
         "ТОЧН. 100% • РЕКОРД x5")
     assert(Rules.compact_accuracy_caption(100, 1, 0, 0, 0) == "ТОЧН. 100%")
     # Different strike heights now have different recovery windows.
+    assert(is_equal_approx(Rules.guard_regen_per_second(0.65, false), 0.0))
+    assert(is_equal_approx(Rules.guard_regen_per_second(0.01, true), 0.0))
+    assert(is_equal_approx(Rules.guard_regen_per_second(0.0, false), 20.0))
+    assert(is_equal_approx(Rules.guard_regen_per_second(0.0, true), 28.0))
     assert(is_equal_approx(Rules.attack_cooldown_for_level(1, false), 0.52))
     assert(is_equal_approx(Rules.attack_cooldown_for_level(0, false), 0.43))
     assert(is_equal_approx(Rules.attack_cooldown_for_level(-1, false), 0.49))
