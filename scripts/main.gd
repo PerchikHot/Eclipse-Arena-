@@ -1540,6 +1540,13 @@ func _input(event: InputEvent) -> void:
                 return
         get_viewport().set_input_as_handled()
         return
+    # START toggles pause on the button press edge, including resume while
+    # paused. This runs before the paused input gate, unlike combat actions.
+    if event is InputEventJoypadButton and CombatRules.gamepad_pause_requested(
+            event.pressed, event.button_index, in_menu, round_over):
+        toggle_pause()
+        get_viewport().set_input_as_handled()
+        return
     if in_menu or manual_paused or controls_help_label.visible:
         return
     if event is InputEventScreenTouch:
