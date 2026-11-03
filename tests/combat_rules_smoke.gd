@@ -167,6 +167,15 @@ func _initialize() -> void:
         Rules.ai_windup_seconds(1, false, 0))
     assert(Rules.ai_attack_cooldown(0, false, 0) >
         Rules.ai_attack_cooldown(0, false, 2))
+    # AI guard now has real stamina and cannot block forever.
+    assert(is_equal_approx(Rules.ai_guard_stamina_step(100.0, true, 0.1), 98.2))
+    assert(is_equal_approx(Rules.ai_guard_stamina_step(20.0, false, 0.1), 22.4))
+    assert(is_equal_approx(Rules.ai_guard_stamina_step(1.0, true, 1.0), 0.0) == false)
+    assert(is_equal_approx(Rules.ai_guard_stamina_step(0.0, true, 1.0), 0.0))
+    assert(is_equal_approx(Rules.ai_guard_stamina_step(99.0, false, 1.0), 100.0))
+    assert(Rules.ai_guard_can_start(20.0, false))
+    assert(not Rules.ai_guard_can_start(19.9, false))
+    assert(not Rules.ai_guard_can_start(100.0, true))
     # Guard release must stop a stale blocking window in the same frame.
     assert(is_equal_approx(Rules.active_guard_timer(true, false, 0.15), 0.15))
     assert(Rules.active_guard_timer(false, false, 0.15) == 0.0)

@@ -279,6 +279,16 @@ static func guard_regen_per_second(recovery_delay: float, exhausted: bool) -> fl
         return 0.0
     return 28.0 if exhausted else 20.0
 
+# Rival guard uses a finite, deterministic stamina budget. Recovery is
+# deliberately faster than passive blocking drain, but exhaustion still
+# requires a 35-point recovery before guarding can resume.
+static func ai_guard_stamina_step(stamina: float, guarding: bool, delta: float) -> float:
+    var safe_delta := clampf(delta, 0.0, 0.1)
+    return clampf(stamina + (-18.0 if guarding else 24.0) * safe_delta, 0.0, 100.0)
+
+static func ai_guard_can_start(stamina: float, exhausted: bool) -> bool:
+    return not exhausted and stamina >= 20.0
+
 # Standing guard covers the head, crouching guard covers the legs. Both
 # cover the torso; attacks against the wrong guard height are unblocked.
 static func guard_covers_level(crouched: bool, level: int) -> bool:

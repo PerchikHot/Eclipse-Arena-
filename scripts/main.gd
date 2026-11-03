@@ -39,6 +39,8 @@ var enemy_hit_fx := 0.0
 var ai_timer := 0.0
 var ai_retreat := false
 var enemy_guarding := false
+var enemy_guard_stamina := 100.0
+var enemy_guard_exhausted := false
 var enemy_crouching := false
 var ai_difficulty := 1  # 0: novice, 1: normal, 2: master
 var animation_clock := 0.0
@@ -1361,6 +1363,8 @@ func restart_round() -> void:
     ai_timer = 0.0
     ai_retreat = false
     enemy_guarding = false
+    enemy_guard_stamina = 100.0
+    enemy_guard_exhausted = false
     enemy_crouching = false
     result_panel.visible = false
     if not in_menu:
@@ -1888,16 +1892,29 @@ func _process(delta: float) -> void:
             var hp_before_hit := hp_right
             # Same tested damage rule for touch and keyboard combat.
             var guarding_target := (training_mode and training_target_guarding) or (not training_mode and enemy_guarding and CombatRules.guard_covers_level(enemy_crouching, player_attack_level))
+            # The AI now has a finite guard resource just like the player.
+            # Breaking its guard turns the current hit into a clean strike,
+            # opens a counterattack window and prevents infinite blocking.
+            var guard_broken_by_player := false
+            if guarding_target and not training_mode and not can_skill:
+                enemy_guard_stamina = maxf(0.0, enemy_guard_stamina -
+                    CombatRules.guard_impact_cost(player_attack_level, false))
+                if enemy_guard_stamina <= 0.0:
+                    enemy_guard_exhausted = true
+                    enemy_guarding = false
+                    guard_broken_by_player = true
+            var effective_guard := guarding_target and not guard_broken_by_player
             var attack_damage := CombatRules.level_damage(
-                CombatRules.player_attack_damage(combo_hits, can_skill, guarding_target),
+                CombatRules.player_attack_damage(combo_hits, can_skill, effective_guard),
                 player_attack_level)
             if guarding_target and not can_skill:
                 training_guarded_hits += 1
             hp_right = maxi(0, hp_right - attack_damage)
             damage_dealt += hp_before_hit - hp_right
-            if not training_mode and not guarding_target:
+            if not training_mode and not effective_guard:
                 enemy_hitstun = CombatRules.hitstun_seconds(
-                    player_attack_level, can_skill, false)
+                    player_attack_level, can_skill, false) +
+                    (0.12 if guard_broken_by_player else 0.0)
                 # Interrupt an attack being telegraphed. The enemy cannot
                 # deliver a hit while visibly recoiling from a clean strike.
                 enemy_windup = 0.0
@@ -1918,13 +1935,23 @@ func _process(delta: float) -> void:
                     finish_round(1)
                     return
     if not training_mode and hp_left > 0 and hp_right > 0:
+        # Recover stamina between AI decisions. Exhaustion clears only after
+        # a meaningful recovery, avoiding a one-frame guard flicker.
+        enemy_guard_stamina = CombatRules.ai_guard_stamina_step(
+            enemy_guard_stamina, enemy_guarding, delta)
+        if enemy_guard_stamina <= 0.0:
+            enemy_guard_exhausted = true
+            enemy_guarding = false
+        elif enemy_guard_exhausted and enemy_guard_stamina >= 35.0:
+            enemy_guard_exhausted = false
         var distance: float = absf(x_left - x_right)
         if ai_timer <= 0.0 and enemy_hitstun <= 0.0:
             ai_timer = [1.8, 1.1, 0.6][ai_difficulty]
             ai_retreat = distance < 185.0 and randf() < [0.18, 0.35, 0.50][ai_difficulty]
             # Experienced rivals defend at different heights. The guard is
             # sampled per decision, never randomly per frame.
-            enemy_guarding = distance < 190.0 and randf() < [0.10, 0.32, 0.52][ai_difficulty]
+            enemy_guarding = CombatRules.ai_guard_can_start(
+                enemy_guard_stamina, enemy_guard_exhausted) and distance < 190.0 and randf() < [0.10, 0.32, 0.52][ai_difficulty]
             enemy_crouching = enemy_guarding and randf() < 0.48
         if enemy_hitstun > 0.0:
             enemy_guarding = false
@@ -2063,6 +2090,10 @@ func _draw() -> void:
     draw_sprite_fighter(Vector2(x_right, 610), enemy_fighter, x_left >= x_right, enemy_motion, enemy_attack_fx, enemy_hit_fx, hp_right, enemy_crouching, enemy_attack_level)
     if enemy_guarding and not training_mode:
         draw_arc(Vector2(x_right, 610 - (82.0 if enemy_crouching else 168.0)), 65.0, -2.3, 0.4, 28, Color("#85caff", 0.8), 5.0)
+    elif enemy_guard_exhausted and not training_mode:
+        # Red broken-guard cue near the rival, not another HUD text panel.
+        draw_arc(Vector2(x_right, 465), 72.0, -2.2, 0.2, 28,
+            Color("#ff677d", 0.9), 5.0)
     if parry_window > 0.0:
         draw_arc(Vector2(x_left, y_left - 115.0), 92.0, 0.0, TAU, 40,
             Color("#8ef2d6", 0.95), 7.0)
