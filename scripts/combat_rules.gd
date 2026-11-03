@@ -106,10 +106,14 @@ static func career_win_rate(record: Vector3i) -> int:
 # already recorded match statistics. Never awards currency or changes saves.
 static func round_performance_score(outcome: int, landed: int, attempted: int,
         dealt: int, taken: int, parries: int) -> int:
+    # Imported counters can be inconsistent: one attack cannot land twice.
+    # Negative damage is invalid. Preserve scores for valid match records.
+    var safe_attempted := maxi(0, attempted)
+    var safe_landed := clampi(landed, 0, safe_attempted)
     var accuracy := 0
-    if attempted > 0:
-        accuracy = clampi(roundi(100.0 * float(maxi(0, landed)) / float(attempted)), 0, 100)
-    var margin := clampi(dealt - taken, -100, 100)
+    if safe_attempted > 0:
+        accuracy = clampi(roundi(100.0 * float(safe_landed) / float(safe_attempted)), 0, 100)
+    var margin := clampi(maxi(0, dealt) - maxi(0, taken), -100, 100)
     var victory_bonus := 25 if outcome > 0 else (10 if outcome == 0 else 0)
     return clampi(roundi(float(accuracy) * 0.55 + float(margin) * 0.2 +
         float(clampi(parries, 0, 5)) * 4.0) + victory_bonus, 0, 100)
