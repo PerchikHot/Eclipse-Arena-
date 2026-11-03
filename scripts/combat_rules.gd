@@ -21,7 +21,9 @@ static func defense_challenge_score(parries: int, dodges: int) -> int:
 static func defense_accuracy(parries: int, dodges: int, attempts: int) -> int:
     if attempts <= 0:
         return 0
-    var defended := maxi(0, parries) + maxi(0, dodges)
+    # Imported or corrupted drill counters can exceed the number of attacks.
+    # Never let impossible defenses earn a perfect accuracy grade.
+    var defended := mini(attempts, maxi(0, parries) + maxi(0, dodges))
     return clampi(roundi(100.0 * float(defended) / float(attempts)), 0, 100)
 
 # A completed defense drill gets a reproducible rank. At least three dummy
