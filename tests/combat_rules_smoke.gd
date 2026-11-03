@@ -170,7 +170,7 @@ func _initialize() -> void:
     # AI guard now has real stamina and cannot block forever.
     assert(is_equal_approx(Rules.ai_guard_stamina_step(100.0, true, 0.1), 98.2))
     assert(is_equal_approx(Rules.ai_guard_stamina_step(20.0, false, 0.1), 22.4))
-    assert(is_equal_approx(Rules.ai_guard_stamina_step(1.0, true, 1.0), 0.0) == false)
+    assert(is_equal_approx(Rules.ai_guard_stamina_step(1.0, true, 1.0), 0.0))
     assert(is_equal_approx(Rules.ai_guard_stamina_step(0.0, true, 1.0), 0.0))
     assert(is_equal_approx(Rules.ai_guard_stamina_step(99.0, false, 1.0), 100.0))
     assert(Rules.ai_guard_can_start(20.0, false))
