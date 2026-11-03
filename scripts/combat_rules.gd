@@ -29,7 +29,9 @@ static func defense_accuracy(parries: int, dodges: int, attempts: int) -> int:
 # A completed defense drill gets a reproducible rank. At least three dummy
 # attacks are required so a single lucky parry cannot earn an S grade.
 static func defense_challenge_grade(parries: int, dodges: int, attempts: int) -> String:
-    if attempts < 3:
+    # Reject inconsistent imported records instead of awarding an S grade.
+    # Each dummy attack can be parried or dodged, never both.
+    if attempts < 3 or parries < 0 or dodges < 0 or parries + dodges > attempts:
         return "—"
     var accuracy := defense_accuracy(parries, dodges, attempts)
     if accuracy >= 90:
