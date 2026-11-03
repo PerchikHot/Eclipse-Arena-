@@ -1913,8 +1913,7 @@ func _process(delta: float) -> void:
             damage_dealt += hp_before_hit - hp_right
             if not training_mode and not effective_guard:
                 enemy_hitstun = CombatRules.hitstun_seconds(
-                    player_attack_level, can_skill, false) +
-                    (0.12 if guard_broken_by_player else 0.0)
+                    player_attack_level, can_skill, false) + (0.12 if guard_broken_by_player else 0.0)
                 # Interrupt an attack being telegraphed. The enemy cannot
                 # deliver a hit while visibly recoiling from a clean strike.
                 enemy_windup = 0.0
